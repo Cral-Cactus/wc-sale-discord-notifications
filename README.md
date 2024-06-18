@@ -1,2 +1,2 @@
-# woocommerce-discord-sale-logs
-Woocommerce Sale Logs In Discord
+# woocommerce-discord-sale-notifications
+Woocommerce Sale Notifications In Discord
