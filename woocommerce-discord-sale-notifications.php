@@ -3,7 +3,7 @@
 * Plugin Name: WooCommerce Sale Notifications for Discord
 * Plugin URI: https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications
 * Description: Sends a notification to a Discord channel when a sale is made on Woocommerce.
-* Version: 1.1
+* Version: 1.4
 * Author: Cral_Cactus
 * Author URI: https://github.com/Cral-Cactus
 * Requires Plugins: woocommerce
@@ -21,6 +21,7 @@ class WC_Discord_Sale_Notifications {
     public function __construct() {
         add_action('admin_menu', array($this, 'add_settings_page'));
         add_action('admin_init', array($this, 'register_settings'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_color_picker'));
         add_action('woocommerce_thankyou', array($this, 'send_discord_notification'));
     }
 
@@ -76,27 +77,53 @@ class WC_Discord_Sale_Notifications {
         $status_webhooks = get_option('discord_status_webhooks', []);
         $status_colors = get_option('discord_status_colors', []);
 
+        $default_colors = array(
+            'wc-pending' => '#ffdc00',
+            'wc-processing' => '#00e5ed',
+            'wc-on-hold' => '#FFA500',
+            'wc-completed' => '#00d660',
+            'wc-cancelled' => '#d60000',
+            'wc-refunded' => '#6800e0',
+            'wc-failed' => '#111111'
+        );
+
         foreach ($order_statuses as $status => $label) {
             $checked = in_array($status, $selected_statuses) ? 'checked' : '';
             $webhook = isset($status_webhooks[$status]) ? esc_attr($status_webhooks[$status]) : '';
-            $color = isset($status_colors[$status]) ? esc_attr($status_colors[$status]) : '#ffffff';
+            $color = isset($status_colors[$status]) ? esc_attr($status_colors[$status]) : (isset($default_colors[$status]) ? $default_colors[$status] : '#ffffff');
 
             echo '<p style="margin-bottom: 10px;">';
             echo '<label style="margin-right: 10px;">';
             echo '<input type="checkbox" name="discord_order_statuses[]" value="' . esc_attr($status) . '" ' . $checked . '>';
             echo ' ' . esc_html($label);
             echo '</label>';
-            echo '<input type="text" name="discord_status_webhooks[' . esc_attr($status) . ']" value="' . $webhook . '" placeholder="Webhook URL (optional)" size="50">';
-            echo '<input type="color" name="discord_status_colors[' . esc_attr($status) . ']" value="' . $color . '" style="margin-left: 10px;">';
+            echo '<input type="text" class="webhook-input" style="margin-right: 10px" name="discord_status_webhooks[' . esc_attr($status) . ']" value="' . $webhook . '" placeholder="Webhook URL (optional)" size="50">';
+            echo '<input type="text" name="discord_status_colors[' . esc_attr($status) . ']" value="' . esc_attr($color) . '" class="discord-embed-color-picker" />';
             echo '</p>';
         }
+
         echo '<style>
                 @media (max-width: 767px) {
-                    input[name^="discord_status_webhooks"], input[name^="discord_status_colors"] {
+                    .wp-picker-container {
                         margin-top: 5px !important;
+                    }
+
+                    .webhook-input {
+                        margin-right: 0 !important;
                     }
                 }
               </style>';
+    }
+
+    public function enqueue_color_picker($hook_suffix) {
+        wp_enqueue_style('wp-color-picker');
+        wp_enqueue_script(
+            'discord-color-picker-script',
+            plugins_url('color-picker.js', __FILE__),
+            array('wp-color-picker'),
+            false,
+            true
+        );
     }
 
     public function notification_settings_page() {
