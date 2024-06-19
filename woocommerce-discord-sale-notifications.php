@@ -147,64 +147,86 @@ class WC_Discord_Sale_Notifications {
         $status_webhooks = get_option('discord_status_webhooks', []);
         $status_colors = get_option('discord_status_colors', []);
         $order = wc_get_order($order_id);
-
+    
         if (!$order) {
             return;
         }
-
+    
         $order_status = 'wc-' . $order->get_status();
-
+    
         if (!in_array($order_status, $selected_statuses)) {
             return;
         }
-
+    
         $webhook_url = !empty($status_webhooks[$order_status]) ? $status_webhooks[$order_status] : get_option('discord_webhook_url');
         $embed_color = !empty($status_colors[$order_status]) ? hexdec(substr($status_colors[$order_status], 1)) : hexdec(substr('#ffffff', 1));
-
+    
         if (!$webhook_url) {
             return;
         }
-
+    
         $order_data = $order->get_data();
+        $order_id = $order_data['id'];
+        $order_status = wc_get_order_status_name($order->get_status());
         $order_total = $order_data['total'];
         $order_currency = $order_data['currency'];
-        $order_date = $order_data['date_created']->date('Y-m-d H:i:s');
-        $order_number = $order_data['id'];
-        $order_email = $order_data['billing']['email'];
+        $order_date = $order_data['date_created'];
+        $order_timestamp = $order_date->getTimestamp();
+        $order_time_ago = human_time_diff($order_timestamp, current_time('timestamp')) . ' ago';
         $payment_method = $order_data['payment_method_title'];
+        $transaction_id = $order_data['transaction_id'];
+        $billing_first_name = $order_data['billing']['first_name'];
+        $billing_last_name = $order_data['billing']['last_name'];
+        $billing_email = $order_data['billing']['email'];
         $order_items = $order->get_items();
         $items_list = '';
-
+        $first_product_image = '';
+    
         foreach ($order_items as $item) {
-            $items_list .= $item->get_name() . ', ';
+            $product = $item->get_product();
+            if ($first_product_image == '' && $product) {
+                $first_product_image = wp_get_attachment_url($product->get_image_id());
+            }
+    
+            $product_name = $item->get_name();
+            $product_quantity = $item->get_quantity();
+            $product_total = $item->get_total();
+            $items_list .= "{$product_quantity}x {$product_name} - {$product_total} {$order_currency}\n";
         }
-        $items_list = rtrim($items_list, ', ');
-
+        $items_list = rtrim($items_list, "\n");
+    
+        $order_edit_url = admin_url('post.php?post=' . $order_id . '&action=edit');
+    
         $embed = [
             'title' => '🎉 New Sale!',
             'fields' => [
-                ['name' => 'Order Number', 'value' => $order_number, 'inline' => true],
-                ['name' => 'Order Date', 'value' => $order_date, 'inline' => true],
-                ['name' => 'Order Total', 'value' => $order_total . ' ' . $order_currency, 'inline' => true],
-                ['name' => 'Items', 'value' => $items_list],
-                ['name' => 'Email', 'value' => $order_email, 'inline' => true],
-                ['name' => 'Payment Method', 'value' => $payment_method, 'inline' => true]
+                ['name' => 'Order ID', 'value' => "[#{$order_id}]({$order_edit_url})", 'inline' => false],
+                ['name' => 'Status', 'value' => $order_status, 'inline' => false],
+                ['name' => 'Payment', 'value' => "{$order_total} {$order_currency} - {$payment_method}", 'inline' => false],
+                ['name' => 'Transaction ID', 'value' => $transaction_id, 'inline' => false],
+                ['name' => 'Product', 'value' => $items_list, 'inline' => false],
+                ['name' => 'Creation Date', 'value' => "<t:{$order_timestamp}:d> (<t:{$order_timestamp}:R>)", 'inline' => false],
+                ['name' => 'Billing Information', 'value' => "**Name** » {$billing_first_name} {$billing_last_name}\n**Email** » {$billing_email}", 'inline' => true]
             ],
             'color' => $embed_color
         ];
-
+    
+        if ($first_product_image) {
+            $embed['image'] = ['url' => $first_product_image];
+        }
+    
         $this->send_to_discord($webhook_url, $embed);
     }
-
+    
     private function send_to_discord($webhook_url, $embed) {
         $data = json_encode(['embeds' => [$embed]]);
-
+    
         $args = [
             'body'        => $data,
             'headers'     => ['Content-Type' => 'application/json'],
             'timeout'     => 60,
         ];
-
+    
         wp_remote_post($webhook_url, $args);
     }
 
