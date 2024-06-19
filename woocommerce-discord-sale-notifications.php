@@ -3,7 +3,7 @@
 * Plugin Name: WooCommerce Sale Notifications for Discord
 * Plugin URI: https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications
 * Description: Sends a notification to a Discord channel when a sale is made on Woocommerce.
-* Version: 1.4
+* Version: 1.5
 * Author: Cral_Cactus
 * Author URI: https://github.com/Cral-Cactus
 * Requires Plugins: woocommerce
@@ -23,6 +23,7 @@ class WC_Discord_Sale_Notifications {
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_color_picker'));
         add_action('woocommerce_thankyou', array($this, 'send_discord_notification'));
+        add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'plugin_action_links'));
     }
 
     public function add_settings_page() {
@@ -205,6 +206,12 @@ class WC_Discord_Sale_Notifications {
         ];
 
         wp_remote_post($webhook_url, $args);
+    }
+
+    public function plugin_action_links($links) {
+        $settings_link = '<a href="' . esc_url(admin_url('admin.php?page=wc-discord-notifications')) . '">' . __('Settings', 'wc-discord-notifications') . '</a>';
+        array_unshift($links, $settings_link);
+        return $links;
     }
 }
 
