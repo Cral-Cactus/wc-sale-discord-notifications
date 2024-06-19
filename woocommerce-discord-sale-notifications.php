@@ -38,6 +38,8 @@ class WC_Discord_Sale_Notifications {
 
     public function register_settings() {
         register_setting('wc_discord_notifications', 'discord_webhook_url');
+        register_setting('wc_discord_notifications', 'discord_order_statuses');
+        register_setting('wc_discord_notifications', 'discord_status_webhooks');
 
         add_settings_section(
             'wc_discord_notifications_section',
@@ -53,11 +55,45 @@ class WC_Discord_Sale_Notifications {
             'wc_discord_notifications',
             'wc_discord_notifications_section'
         );
+
+        add_settings_field(
+            'discord_order_statuses',
+            __('Order Status Notifications', 'wc-discord-notifications'),
+            array($this, 'discord_order_statuses_callback'),
+            'wc_discord_notifications',
+            'wc_discord_notifications_section'
+        );
     }
 
     public function discord_webhook_url_callback() {
         $webhook_url = get_option('discord_webhook_url');
         echo '<input type="text" name="discord_webhook_url" value="' . esc_attr($webhook_url) . '" size="50" />';
+    }
+
+    public function discord_order_statuses_callback() {
+        $order_statuses = wc_get_order_statuses();
+        $selected_statuses = get_option('discord_order_statuses', []);
+        $status_webhooks = get_option('discord_status_webhooks', []);
+    
+        foreach ($order_statuses as $status => $label) {
+            $checked = in_array($status, $selected_statuses) ? 'checked' : '';
+            $webhook = isset($status_webhooks[$status]) ? esc_attr($status_webhooks[$status]) : '';
+            echo '<p style="margin-bottom: 10px;">';
+            echo '<label style="margin-right: 10px;">';
+            echo '<input type="checkbox" name="discord_order_statuses[]" value="' . esc_attr($status) . '" ' . $checked . '>';
+            echo ' ' . esc_html($label);
+            echo '</label>';
+            echo '<input type="text" name="discord_status_webhooks[' . esc_attr($status) . ']" value="' . $webhook . '" placeholder="Webhook URL (optional)" size="50" style="margin-left: 0; margin-top: 0;">'; // Remove margin-left, add margin-top
+            echo '</p>';
+        }
+        echo '<style>
+                @media (max-width: 767px) {
+                    input[name^="discord_status_webhooks"] {
+                        margin-left: 0 !important;
+                        margin-top: 5px !important;
+                    }
+                }
+              </style>';
     }
 
     public function notification_settings_page() {
@@ -76,13 +112,22 @@ class WC_Discord_Sale_Notifications {
     }
 
     public function send_discord_notification($order_id) {
-        $webhook_url = get_option('discord_webhook_url');
-        if (!$webhook_url) {
+        $selected_statuses = get_option('discord_order_statuses', []);
+        $status_webhooks = get_option('discord_status_webhooks', []);
+        $order = wc_get_order($order_id);
+
+        if (!$order) {
             return;
         }
 
-        $order = wc_get_order($order_id);
-        if (!$order) {
+        $order_status = 'wc-' . $order->get_status();
+
+        if (!in_array($order_status, $selected_statuses)) {
+            return;
+        }
+
+        $webhook_url = !empty($status_webhooks[$order_status]) ? $status_webhooks[$order_status] : get_option('discord_webhook_url');
+        if (!$webhook_url) {
             return;
         }
 
