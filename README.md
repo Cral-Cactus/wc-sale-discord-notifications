@@ -1,2 +1,62 @@
-# woocommerce-discord-sale-notifications
-Woocommerce Sale Notifications For Discord
+# WooCommerce Sale Notifications for Discord
+
+[![GitHub release](https://img.shields.io/github/release/Cral-Cactus/woocommerce-discord-sale-notifications.svg)](https://GitHub.com/Cral-Cactus/woocommerce-discord-sale-notifications/releases/)
+[![GitHub issues](https://img.shields.io/github/issues/Cral-Cactus/woocommerce-discord-sale-notifications.svg)](https://GitHub.com/Cral-Cactus/woocommerce-discord-sale-notifications/issues/)
+
+This plugin sends a notification to a Discord channel whenever a sale is made on WooCommerce. It is highly customizable, allowing notifications for different order statuses and the ability to configure the webhook URL and message colors.
+
+## Features
+
+- Sends a Discord notification when a sale is made on WooCommerce.
+- Customizable order statuses for notifications.
+- Configure different webhook URLs for different order statuses.
+- Color-coded notifications based on order status.
+
+## Requirements
+
+- WordPress 6.2 or higher
+- WooCommerce 8.5 or higher (tested up to 9.0)
+
+## Installation
+
+1. Download the plugin from the [GitHub repository](https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications).
+2. Upload the plugin files to the `/wp-content/plugins/woocommerce-discord-sale-notifications` directory, or install the plugin through the WordPress plugins screen directly.
+3. Activate the plugin through the 'Plugins' screen in WordPress.
+4. Navigate to WooCommerce > Discord Notifications to configure the plugin.
+
+## Configuration
+
+1. **Webhook URL**: Enter the Discord Webhook URL where notifications will be sent.
+2. **Order Status Notifications**: Select the order statuses for which you want to send notifications. You can also specify different webhook URLs and colors for each status.
+
+## Usage
+
+1. After installing and activating the plugin, go to WooCommerce > Discord Notifications.
+2. Configure your Discord Webhook URL and select the order statuses you want to receive notifications for.
+3. Save your settings.
+
+Whenever an order is placed, a notification will be sent to the specified Discord channel with details about the order.
+
+## Contributing
+
+1. Fork the repository on GitHub.
+2. Create a new branch for your feature or bug fix.
+3. Commit your changes and push the branch to GitHub.
+4. Open a pull request to the main branch.
+
+## Changelog
+
+### 1.6
+- Initial release.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Author
+
+[Cral_Cactus](https://github.com/Cral-Cactus)
+
+## Support
+
+If you have any questions or need help, feel free to open an issue on the [GitHub repository](https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications/issues).
