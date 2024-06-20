@@ -92,13 +92,13 @@ class WC_Discord_Sale_Notifications {
             $checked = in_array($status, $selected_statuses) ? 'checked' : '';
             $webhook = isset($status_webhooks[$status]) ? esc_attr($status_webhooks[$status]) : '';
             $color = isset($status_colors[$status]) ? esc_attr($status_colors[$status]) : (isset($default_colors[$status]) ? $default_colors[$status] : '#ffffff');
-
+        
             echo '<p style="margin-bottom: 10px;">';
             echo '<label style="margin-right: 10px;">';
-            echo '<input type="checkbox" name="discord_order_statuses[]" value="' . esc_attr($status) . '" ' . $checked . '>';
+            echo '<input type="checkbox" name="discord_order_statuses[]" value="' . esc_attr($status) . '" ' . esc_attr($checked) . '>';
             echo ' ' . esc_html($label);
             echo '</label>';
-            echo '<input type="text" class="webhook-input" style="margin-right: 10px" name="discord_status_webhooks[' . esc_attr($status) . ']" value="' . $webhook . '" placeholder="Webhook URL (optional)" size="50">';
+            echo '<input type="text" class="webhook-input" style="margin-right: 10px" name="discord_status_webhooks[' . esc_attr($status) . ']" value="' . esc_attr($webhook) . '" placeholder="Webhook URL (optional)" size="50">';
             echo '<input type="text" name="discord_status_colors[' . esc_attr($status) . ']" value="' . esc_attr($color) . '" class="discord-embed-color-picker" />';
             echo '</p>';
         }
