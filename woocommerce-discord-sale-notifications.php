@@ -219,7 +219,7 @@ class WC_Discord_Sale_Notifications {
     }
     
     private function send_to_discord($webhook_url, $embed) {
-        $data = json_encode(['embeds' => [$embed]]);
+        $data = wp_json_encode(['embeds' => [$embed]]);
     
         $args = [
             'body'        => $data,
