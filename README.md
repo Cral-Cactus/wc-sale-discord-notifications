@@ -1,7 +1,7 @@
 # WooCommerce Sale Notifications for Discord
 
-[![GitHub release](https://img.shields.io/github/release/Cral-Cactus/woocommerce-discord-sale-notifications.svg)](https://GitHub.com/Cral-Cactus/woocommerce-discord-sale-notifications/releases/)
-[![GitHub issues](https://img.shields.io/github/issues/Cral-Cactus/woocommerce-discord-sale-notifications.svg)](https://GitHub.com/Cral-Cactus/woocommerce-discord-sale-notifications/issues/)
+[![GitHub release](https://img.shields.io/github/release/Cral-Cactus/woocommerce-discord-sale-notifications.svg)](https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications/releases)
+[![GitHub issues](https://img.shields.io/github/issues/Cral-Cactus/woocommerce-discord-sale-notifications.svg)](https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications/issues/)
 
 This plugin sends a notification to a Discord channel whenever a sale is made on WooCommerce. It is highly customizable, allowing notifications for different order statuses and the ability to configure the webhook URL and message colors.
 
