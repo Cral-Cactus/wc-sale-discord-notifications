@@ -1,7 +1,7 @@
-# WooCommerce Sale Notifications for Discord
+# Discord Sale Notifications for WooCommerce
 
-[![GitHub release](https://img.shields.io/github/release/Cral-Cactus/woocommerce-discord-sale-notifications.svg)](https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications/releases)
-[![GitHub issues](https://img.shields.io/github/issues/Cral-Cactus/woocommerce-discord-sale-notifications.svg)](https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications/issues/)
+[![GitHub release](https://img.shields.io/github/release/Cral-Cactus/discord-sale-notifications-for-woocommerce.svg)](https://github.com/Cral-Cactus/discord-sale-notifications-for-woocommerce/releases)
+[![GitHub issues](https://img.shields.io/github/issues/Cral-Cactus/discord-sale-notifications-for-woocommerce.svg)](https://github.com/Cral-Cactus/discord-sale-notifications-for-woocommerce/issues/)
 
 This plugin sends a notification to a Discord channel whenever a sale is made on WooCommerce. It is highly customizable, allowing notifications for different order statuses and the ability to configure the webhook URL and message colors.
 
@@ -19,8 +19,8 @@ This plugin sends a notification to a Discord channel whenever a sale is made on
 
 ## Installation
 
-1. Download the plugin from the [GitHub repository](https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications).
-2. Upload the plugin files to the `/wp-content/plugins/woocommerce-discord-sale-notifications` directory, or install the plugin through the WordPress plugins screen directly.
+1. Download the plugin from the [GitHub repository](https://github.com/Cral-Cactus/discord-sale-notifications-for-woocommerce).
+2. Upload the plugin files to the `/wp-content/plugins/discord-sale-notifications-for-woocommerce` directory, or install the plugin through the WordPress plugins screen directly.
 3. Activate the plugin through the 'Plugins' screen in WordPress.
 4. Navigate to WooCommerce > Discord Notifications to configure the plugin.
 
@@ -59,4 +59,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Support
 
-If you have any questions or need help, feel free to open an issue on the [GitHub repository](https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications/issues).
+If you have any questions or need help, feel free to open an issue on the [GitHub repository](https://github.com/Cral-Cactus/discord-sale-notifications-for-woocommerce/issues).

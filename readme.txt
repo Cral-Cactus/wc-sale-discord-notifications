@@ -1,4 +1,4 @@
-=== WooCommerce Sale Notifications for Discord ===
+=== Discord Sale Notifications for WooCommerce ===
 Contributors: cralcactus
 Tags: woocommerce, discord, notifications, sales
 Requires at least: 6.2
@@ -27,8 +27,8 @@ This plugin sends a notification to a Discord channel whenever a sale is made on
 
 == Installation ==
 
-1. Download the plugin from the [GitHub repository](https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications).
-2. Upload the plugin files to the `/wp-content/plugins/woocommerce-discord-sale-notifications` directory, or install the plugin through the WordPress plugins screen directly.
+1. Download the plugin from the [GitHub repository](https://github.com/Cral-Cactus/discord-sale-notifications-for-woocommerce).
+2. Upload the plugin files to the `/wp-content/plugins/discord-sale-notifications-for-woocommerce` directory, or install the plugin through the WordPress plugins screen directly.
 3. Activate the plugin through the 'Plugins' screen in WordPress.
 4. Navigate to WooCommerce > Discord Notifications to configure the plugin.
 
@@ -67,4 +67,4 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 == Support ==
 
-If you have any questions or need help, feel free to open an issue on the [GitHub repository](https://github.com/Cral-Cactus/woocommerce-discord-sale-notifications/issues).
+If you have any questions or need help, feel free to open an issue on the [GitHub repository](https://github.com/Cral-Cactus/discord-sale-notifications-for-woocommerce/issues).
