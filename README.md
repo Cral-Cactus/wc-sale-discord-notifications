@@ -15,7 +15,7 @@ This plugin sends a notification to a Discord channel whenever a sale is made on
 ## Requirements
 
 - WordPress 6.2 or higher
-- WooCommerce 8.5 or higher (tested up to 9.0)
+- WooCommerce 8.5 or higher (tested up to 9.0.1)
 
 ## Installation
 

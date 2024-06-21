@@ -3,7 +3,7 @@ Contributors: cralcactus
 Tags: woocommerce, discord, notifications, sales
 Requires at least: 6.2
 Tested up to: 9.0
-Stable tag: 1.6
+Stable tag: 1.7
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -23,7 +23,7 @@ This plugin sends a notification to a Discord channel whenever a sale is made on
 == Requirements ==
 
 * WordPress 6.2 or higher
-* WooCommerce 8.5 or higher (tested up to 9.0)
+* WooCommerce 8.5 or higher (tested up to 9.0.1)
 
 == Installation ==
 
