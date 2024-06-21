@@ -130,7 +130,7 @@ class WC_Discord_Sale_Notifications {
     public function notification_settings_page() {
         ?>
         <div class="wrap">
-            <h1><?php _e('Discord Sale Notifications', 'wc-discord-notifications'); ?></h1>
+            <h1><?php esc_html_e('Discord Sale Notifications', 'wc-discord-notifications'); ?></h1>
             <form method="post" action="options.php">
                 <?php
                 settings_fields('wc_discord_notifications');
@@ -231,7 +231,7 @@ class WC_Discord_Sale_Notifications {
     }
 
     public function plugin_action_links($links) {
-        $settings_link = '<a href="' . esc_url(admin_url('admin.php?page=wc-discord-notifications')) . '">' . __('Settings', 'wc-discord-notifications') . '</a>';
+        $settings_link = '<a href="' . esc_url(admin_url('admin.php?page=wc-discord-notifications')) . '">' . esc_html__('Settings', 'wc-discord-notifications') . '</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
