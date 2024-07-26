@@ -1,22 +1,31 @@
 <?php
 /**
-* Plugin Name: Discord Sale Notifications for WooCommerce
-* Plugin URI: https://github.com/Cral-Cactus/discord-sale-notifications-for-woocommerce
-* Description: Sends a notification to a Discord channel when a sale is made on WooCommerce.
-* Version: 1.7
-* Author: Cral_Cactus
-* Author URI: https://github.com/Cral-Cactus
-* Requires Plugins: woocommerce
-* Requires at least: 6.2
-* WC requires at least: 8.5
-* WC tested up to: 9.0.1
-*/
+ * Plugin Name: WC Sale Discord Notifications
+ * Plugin URI: https://github.com/Cral-Cactus/wc-sale-discord-notifications
+ * Description: Sends a notification to a Discord channel when a sale is made on WooCommerce.
+ * Version: 1.7
+ * Author: Cral_Cactus
+ * Author URI: https://github.com/Cral-Cactus
+ * Requires Plugins: woocommerce
+ * Requires at least: 6.2
+ * Tested up to: 6.6.1
+ * WC requires at least: 8.5
+ * WC tested up to: 9.1
+ * License: GPLv3
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
+ */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-class WC_Discord_Sale_Notifications {
+add_action('before_woocommerce_init', function(){
+    if (class_exists(\Automattic\WooCommerce\Utilities\FeaturesUtil::class)) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+    }
+});
+
+class Sale_Discord_Notifications_Woo {
 
     public function __construct() {
         add_action('admin_menu', array($this, 'add_settings_page'));
@@ -29,54 +38,58 @@ class WC_Discord_Sale_Notifications {
     public function add_settings_page() {
         add_submenu_page(
             'woocommerce',
-            __('Discord Notifications', 'wc-discord-notifications'),
-            __('Discord Notifications', 'wc-discord-notifications'),
+            __('Discord Notifications', 'wc-sale-discord-notifications'),
+            __('Discord Notifications', 'wc-sale-discord-notifications'),
             'manage_options',
-            'wc-discord-notifications',
+            'wc-sale-discord-notifications',
             array($this, 'notification_settings_page')
         );
     }
 
     public function register_settings() {
-        register_setting('wc_discord_notifications', 'discord_webhook_url');
-        register_setting('wc_discord_notifications', 'discord_order_statuses');
-        register_setting('wc_discord_notifications', 'discord_status_webhooks');
-        register_setting('wc_discord_notifications', 'discord_status_colors');
+        register_setting('wc_sale_discord_notifications', 'wc_sale_discord_webhook_url');
+        register_setting('wc_sale_discord_notifications', 'wc_sale_discord_order_statuses');
+        register_setting('wc_sale_discord_notifications', 'wc_sale_discord_status_webhooks');
+        register_setting('wc_sale_discord_notifications', 'wc_sale_discord_status_colors');
 
         add_settings_section(
-            'wc_discord_notifications_section',
-            __('Discord Webhook Settings', 'wc-discord-notifications'),
+            'wc_sale_discord_notifications_section',
+            __('Discord Webhook Settings', 'wc-sale-discord-notifications'),
             null,
-            'wc_discord_notifications'
+            'wc_sale_discord_notifications'
         );
 
         add_settings_field(
-            'discord_webhook_url',
-            __('Discord Webhook URL', 'wc-discord-notifications'),
+            'wc_sale_discord_webhook_url',
+            __('Discord Webhook URL', 'wc-sale-discord-notifications'),
             array($this, 'discord_webhook_url_callback'),
-            'wc_discord_notifications',
-            'wc_discord_notifications_section'
+            'wc_sale_discord_notifications',
+            'wc_sale_discord_notifications_section'
         );
 
         add_settings_field(
-            'discord_order_statuses',
-            __('Order Status Notifications', 'wc-discord-notifications'),
+            'wc_sale_discord_order_statuses',
+            __('Order Status Notifications', 'wc-sale-discord-notifications'),
             array($this, 'discord_order_statuses_callback'),
-            'wc_discord_notifications',
-            'wc_discord_notifications_section'
+            'wc_sale_discord_notifications',
+            'wc_sale_discord_notifications_section'
         );
     }
 
     public function discord_webhook_url_callback() {
-        $webhook_url = get_option('discord_webhook_url');
-        echo '<input type="text" name="discord_webhook_url" value="' . esc_attr($webhook_url) . '" size="50" />';
+        $webhook_url = get_option('wc_sale_discord_webhook_url');
+        echo '<input type="text" name="wc_sale_discord_webhook_url" value="' . esc_attr($webhook_url) . '" size="50" />';
     }
 
     public function discord_order_statuses_callback() {
         $order_statuses = wc_get_order_statuses();
-        $selected_statuses = get_option('discord_order_statuses', []);
-        $status_webhooks = get_option('discord_status_webhooks', []);
-        $status_colors = get_option('discord_status_colors', []);
+        $selected_statuses = get_option('wc_sale_discord_order_statuses', []);
+        $selected_statuses = maybe_unserialize($selected_statuses);
+        if (!is_array($selected_statuses)) {
+            $selected_statuses = [];
+        }
+        $status_webhooks = get_option('wc_sale_discord_status_webhooks', []);
+        $status_colors = get_option('wc_sale_discord_status_colors', []);
 
         $default_colors = array(
             'wc-pending' => '#ffdc00',
@@ -92,34 +105,22 @@ class WC_Discord_Sale_Notifications {
             $checked = in_array($status, $selected_statuses) ? 'checked' : '';
             $webhook = isset($status_webhooks[$status]) ? esc_attr($status_webhooks[$status]) : '';
             $color = isset($status_colors[$status]) ? esc_attr($status_colors[$status]) : (isset($default_colors[$status]) ? $default_colors[$status] : '#ffffff');
-        
+
             echo '<p style="margin-bottom: 10px;">';
             echo '<label style="margin-right: 10px;">';
-            echo '<input type="checkbox" name="discord_order_statuses[]" value="' . esc_attr($status) . '" ' . esc_attr($checked) . '>';
+            echo '<input type="checkbox" name="wc_sale_discord_order_statuses[]" value="' . esc_attr($status) . '" ' . esc_attr($checked) . '>';
             echo ' ' . esc_html($label);
             echo '</label>';
-            echo '<input type="text" class="webhook-input" style="margin-right: 10px" name="discord_status_webhooks[' . esc_attr($status) . ']" value="' . esc_attr($webhook) . '" placeholder="Webhook URL (optional)" size="50">';
-            echo '<input type="text" name="discord_status_colors[' . esc_attr($status) . ']" value="' . esc_attr($color) . '" class="discord-embed-color-picker" />';
+            echo '<input type="text" class="webhook-input" style="margin-right: 10px" name="wc_sale_discord_status_webhooks[' . esc_attr($status) . ']" value="' . esc_attr($webhook) . '" placeholder="Webhook URL (optional)" size="50">';
+            echo '<input type="text" name="wc_sale_discord_status_colors[' . esc_attr($status) . ']" value="' . esc_attr($color) . '" class="discord-embed-color-picker" />';
             echo '</p>';
         }
-
-        echo '<style>
-                @media (max-width: 767px) {
-                    .wp-picker-container {
-                        margin-top: 5px !important;
-                    }
-
-                    .webhook-input {
-                        margin-right: 0 !important;
-                    }
-                }
-              </style>';
     }
 
     public function enqueue_color_picker($hook_suffix) {
         wp_enqueue_style('wp-color-picker');
         wp_enqueue_script(
-            'discord-color-picker-script',
+            'wc_sale-color-picker-script',
             plugins_url('color-picker.js', __FILE__),
             array('wp-color-picker'),
             '1.0.0',
@@ -130,11 +131,11 @@ class WC_Discord_Sale_Notifications {
     public function notification_settings_page() {
         ?>
         <div class="wrap">
-            <h1><?php esc_html_e('Discord Sale Notifications', 'wc-discord-notifications'); ?></h1>
+            <h1><?php esc_html_e('Discord Sale Notifications', 'wc-sale-discord-notifications'); ?></h1>
             <form method="post" action="options.php">
                 <?php
-                settings_fields('wc_discord_notifications');
-                do_settings_sections('wc_discord_notifications');
+                settings_fields('wc_sale_discord_notifications');
+                do_settings_sections('wc_sale_discord_notifications');
                 submit_button();
                 ?>
             </form>
@@ -143,28 +144,32 @@ class WC_Discord_Sale_Notifications {
     }
 
     public function send_discord_notification($order_id) {
-        $selected_statuses = get_option('discord_order_statuses', []);
-        $status_webhooks = get_option('discord_status_webhooks', []);
-        $status_colors = get_option('discord_status_colors', []);
+        $selected_statuses = get_option('wc_sale_discord_order_statuses', []);
+        $selected_statuses = maybe_unserialize($selected_statuses);
+        if (!is_array($selected_statuses)) {
+            $selected_statuses = [];
+        }
+        $status_webhooks = get_option('wc_sale_discord_status_webhooks', []);
+        $status_colors = get_option('wc_sale_discord_status_colors', []);
         $order = wc_get_order($order_id);
-    
+
         if (!$order) {
             return;
         }
-    
+
         $order_status = 'wc-' . $order->get_status();
-    
+
         if (!in_array($order_status, $selected_statuses)) {
             return;
         }
-    
-        $webhook_url = !empty($status_webhooks[$order_status]) ? $status_webhooks[$order_status] : get_option('discord_webhook_url');
+
+        $webhook_url = !empty($status_webhooks[$order_status]) ? $status_webhooks[$order_status] : get_option('wc_sale_discord_webhook_url');
         $embed_color = !empty($status_colors[$order_status]) ? hexdec(substr($status_colors[$order_status], 1)) : hexdec(substr('#ffffff', 1));
-    
+
         if (!$webhook_url) {
             return;
         }
-    
+
         $order_data = $order->get_data();
         $order_id = $order_data['id'];
         $order_status = wc_get_order_status_name($order->get_status());
@@ -181,22 +186,22 @@ class WC_Discord_Sale_Notifications {
         $order_items = $order->get_items();
         $items_list = '';
         $first_product_image = '';
-    
+
         foreach ($order_items as $item) {
             $product = $item->get_product();
             if ($first_product_image == '' && $product) {
                 $first_product_image = wp_get_attachment_url($product->get_image_id());
             }
-    
+
             $product_name = $item->get_name();
             $product_quantity = $item->get_quantity();
             $product_total = $item->get_total();
             $items_list .= "{$product_quantity}x {$product_name} - {$product_total} {$order_currency}\n";
         }
         $items_list = rtrim($items_list, "\n");
-    
+
         $order_edit_url = admin_url('post.php?post=' . $order_id . '&action=edit');
-    
+
         $embed = [
             'title' => '🎉 New Sale!',
             'fields' => [
@@ -210,31 +215,49 @@ class WC_Discord_Sale_Notifications {
             ],
             'color' => $embed_color
         ];
-    
+
         if ($first_product_image) {
             $embed['image'] = ['url' => $first_product_image];
         }
-    
+
         $this->send_to_discord($webhook_url, $embed);
     }
-    
+
     private function send_to_discord($webhook_url, $embed) {
         $data = wp_json_encode(['embeds' => [$embed]]);
-    
+
         $args = [
-            'body'        => $data,
-            'headers'     => ['Content-Type' => 'application/json'],
-            'timeout'     => 60,
+            'body' => $data,
+            'headers' => ['Content-Type' => 'application/json'],
+            'timeout' => 60,
         ];
-    
+
         wp_remote_post($webhook_url, $args);
     }
 
     public function plugin_action_links($links) {
-        $settings_link = '<a href="' . esc_url(admin_url('admin.php?page=wc-discord-notifications')) . '">' . esc_html__('Settings', 'wc-discord-notifications') . '</a>';
+        $settings_link = '<a href="' . esc_url(admin_url('admin.php?page=wc-sale-discord-notifications')) . '">' . esc_html__('Settings', 'wc-sale-discord-notifications') . '</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
 }
 
-new WC_Discord_Sale_Notifications();
+new Sale_Discord_Notifications_Woo();
+
+if (!function_exists('wc_sale_is_wc_order')) {
+    /**
+     * Check if the post is a WooCommerce order.
+     *
+     * @param int $post_id Post id.
+     *
+     * @return bool True if the post is a WooCommerce order, false otherwise.
+     */
+    function wc_sale_is_wc_order($post_id = 0) {
+        $bool = false;
+        if ('shop_order' === \Automattic\WooCommerce\Utilities\OrderUtil::get_order_type($post_id)) {
+            $bool = true;
+        }
+        return $bool;
+    }
+}
+?>
