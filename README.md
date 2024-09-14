@@ -14,8 +14,8 @@ This plugin sends a notification to a Discord channel whenever a sale is made on
 
 ## Requirements
 
-- WordPress 6.2 or higher (tested up to 6.6.1)
-- WooCommerce 8.5 or higher (tested up to 9.1)
+- WordPress 6.2 or higher (tested up to 6.6.2)
+- WooCommerce 8.5 or higher (tested up to 9.3.1)
 
 ## Installation
 
@@ -45,6 +45,9 @@ Whenever an order is placed, a notification will be sent to the specified Discor
 4. Open a pull request to the main branch.
 
 ## Changelog
+
+### 1.9
+- Added notifications for changes in order status.
 
 ### 1.8
 - Major changes.

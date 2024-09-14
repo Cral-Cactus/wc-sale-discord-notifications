@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WC Sale Discord Notifications
  * Plugin URI: https://github.com/Cral-Cactus/wc-sale-discord-notifications
- * Description: Sends a notification to a Discord channel when a sale is made on WooCommerce.
- * Version: 1.8
+ * Description: Sends a notification to a Discord channel when a sale is made or order status is changed on WooCommerce.
+ * Version: 1.9
  * Author: Cral_Cactus
  * Author URI: https://github.com/Cral-Cactus
  * Requires Plugins: woocommerce
@@ -32,6 +32,7 @@ class Sale_Discord_Notifications_Woo {
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_color_picker'));
         add_action('woocommerce_thankyou', array($this, 'send_discord_notification'));
+        add_action('woocommerce_order_status_changed', array($this, 'send_discord_notification_on_status_change'), 10, 4); // Action for order status change
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'plugin_action_links'));
     }
 
@@ -144,6 +145,14 @@ class Sale_Discord_Notifications_Woo {
     }
 
     public function send_discord_notification($order_id) {
+        $this->send_discord_notification_common($order_id, 'new');
+    }
+
+    public function send_discord_notification_on_status_change($order_id, $old_status, $new_status, $order) {
+        $this->send_discord_notification_common($order_id, 'update');
+    }
+
+    private function send_discord_notification_common($order_id, $type) {
         $selected_statuses = get_option('wc_sale_discord_order_statuses', []);
         $selected_statuses = maybe_unserialize($selected_statuses);
         if (!is_array($selected_statuses)) {
@@ -177,12 +186,14 @@ class Sale_Discord_Notifications_Woo {
         $order_currency = $order_data['currency'];
         $order_date = $order_data['date_created'];
         $order_timestamp = $order_date->getTimestamp();
-        $order_time_ago = human_time_diff($order_timestamp, current_time('timestamp')) . ' ago';
         $payment_method = $order_data['payment_method_title'];
         $transaction_id = $order_data['transaction_id'];
         $billing_first_name = $order_data['billing']['first_name'];
         $billing_last_name = $order_data['billing']['last_name'];
         $billing_email = $order_data['billing']['email'];
+        
+        $billing_discord = $order->get_meta('_billing_discord');
+
         $order_items = $order->get_items();
         $items_list = '';
         $first_product_image = '';
@@ -202,19 +213,28 @@ class Sale_Discord_Notifications_Woo {
 
         $order_edit_url = admin_url('post.php?post=' . $order_id . '&action=edit');
 
+        $embed_title = ($type === 'new') ? '🎉 New Order!' : '🪄 Order Update!';
+
         $embed = [
-            'title' => '🎉 New Sale!',
+            'title' => $embed_title,
             'fields' => [
                 ['name' => 'Order ID', 'value' => "[#{$order_id}]({$order_edit_url})", 'inline' => false],
                 ['name' => 'Status', 'value' => $order_status, 'inline' => false],
                 ['name' => 'Payment', 'value' => "{$order_total} {$order_currency} - {$payment_method}", 'inline' => false],
-                ['name' => 'Transaction ID', 'value' => $transaction_id, 'inline' => false],
                 ['name' => 'Product', 'value' => $items_list, 'inline' => false],
                 ['name' => 'Creation Date', 'value' => "<t:{$order_timestamp}:d> (<t:{$order_timestamp}:R>)", 'inline' => false],
                 ['name' => 'Billing Information', 'value' => "**Name** » {$billing_first_name} {$billing_last_name}\n**Email** » {$billing_email}", 'inline' => true]
             ],
             'color' => $embed_color
         ];
+		
+        if (!empty($billing_discord)) {
+            $embed['fields'][count($embed['fields']) - 1]['value'] .= "\n**Discord** » {$billing_discord}";
+        }
+
+        if (!empty($transaction_id)) {
+            $embed['fields'][] = ['name' => 'Transaction ID', 'value' => $transaction_id, 'inline' => false];
+        }
 
         if ($first_product_image) {
             $embed['image'] = ['url' => $first_product_image];

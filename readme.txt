@@ -2,8 +2,8 @@
 Contributors: cralcactus
 Tags: woocommerce, discord, notifications, sales
 Requires at least: 6.2
-Tested up to: 6.6.1
-Stable tag: 1.8
+Tested up to: 6.6.2
+Version: 1.9
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -22,8 +22,8 @@ This plugin sends a notification to a Discord channel whenever a sale is made on
 
 == Requirements ==
 
-* WordPress 6.2 or higher (tested up to 6.6.1)
-* WooCommerce 8.5 or higher (tested up to 9.1)
+* WordPress 6.2 or higher (tested up to 6.6.2)
+* WooCommerce 8.5 or higher (tested up to 9.3.1)
 
 == Installation ==
 
@@ -52,7 +52,14 @@ Whenever an order is placed, a notification will be sent to the specified Discor
 3. Commit your changes and push the branch to GitHub.
 4. Open a pull request to the main branch.
 
+== Screenshots ==
+
+1. Picture of the plugin dashboard
+
 == Changelog ==
+
+= 1.9 =
+* Added notifications for changes in order status.
 
 = 1.8 =
 * Major changes.
