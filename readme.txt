@@ -19,11 +19,12 @@ This plugin sends a notification to a Discord channel whenever a sale is made on
 * Customizable order statuses for notifications.
 * Configure different webhook URLs for different order statuses.
 * Color-coded notifications based on order status.
+* Optionally exclude product images from embeds.
 
 == Requirements ==
 
 * WordPress 6.2 or higher (tested up to 6.6.2)
-* WooCommerce 8.5 or higher (tested up to 9.3.1)
+* WooCommerce 8.5 or higher (tested up to 9.3.3)
 
 == Installation ==
 
@@ -36,6 +37,7 @@ This plugin sends a notification to a Discord channel whenever a sale is made on
 
 1. **Webhook URL**: Enter the Discord Webhook URL where notifications will be sent.
 2. **Order Status Notifications**: Select the order statuses for which you want to send notifications. You can also specify different webhook URLs and colors for each status.
+3. **Disable Product Image in Embed**: Check this option if you wish to omit product images from the embed.
 
 == Usage ==
 
@@ -57,6 +59,9 @@ Whenever an order is placed, a notification will be sent to the specified Discor
 1. Picture of the plugin dashboard
 
 == Changelog ==
+
+= 2.0 =
+* Order status notifications fix and added option to exclude product images from embeds.
 
 = 1.9 =
 * Added notifications for changes in order status.

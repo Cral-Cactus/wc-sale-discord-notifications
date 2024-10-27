@@ -3,14 +3,14 @@
  * Plugin Name: WC Sale Discord Notifications
  * Plugin URI: https://github.com/Cral-Cactus/wc-sale-discord-notifications
  * Description: Sends a notification to a Discord channel when a sale is made or order status is changed on WooCommerce.
- * Version: 1.9
+ * Version: 2.0
  * Author: Cral_Cactus
  * Author URI: https://github.com/Cral-Cactus
  * Requires Plugins: woocommerce
  * Requires at least: 6.2
- * Tested up to: 6.6.1
+ * Tested up to: 6.6.2
  * WC requires at least: 8.5
- * WC tested up to: 9.1
+ * WC tested up to: 9.3.3
  * License: GPLv3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  */
@@ -32,7 +32,7 @@ class Sale_Discord_Notifications_Woo {
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_color_picker'));
         add_action('woocommerce_thankyou', array($this, 'send_discord_notification'));
-        add_action('woocommerce_order_status_changed', array($this, 'send_discord_notification_on_status_change'), 10, 4); // Action for order status change
+        add_action('woocommerce_order_status_changed', array($this, 'send_discord_notification_on_status_change'), 10, 4);
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'plugin_action_links'));
     }
 
@@ -52,6 +52,7 @@ class Sale_Discord_Notifications_Woo {
         register_setting('wc_sale_discord_notifications', 'wc_sale_discord_order_statuses');
         register_setting('wc_sale_discord_notifications', 'wc_sale_discord_status_webhooks');
         register_setting('wc_sale_discord_notifications', 'wc_sale_discord_status_colors');
+        register_setting('wc_sale_discord_notifications', 'wc_sale_discord_disable_image');
 
         add_settings_section(
             'wc_sale_discord_notifications_section',
@@ -72,6 +73,17 @@ class Sale_Discord_Notifications_Woo {
             'wc_sale_discord_order_statuses',
             __('Order Status Notifications', 'wc-sale-discord-notifications'),
             array($this, 'discord_order_statuses_callback'),
+            'wc_sale_discord_notifications',
+            'wc_sale_discord_notifications_section'
+        );
+
+        add_settings_field(
+            'wc_sale_discord_disable_image',
+            __('Disable Product Image in Embed', 'wc-sale-discord-notifications'),
+            function() {
+                $disable_image = get_option('wc_sale_discord_disable_image');
+                echo '<input type="checkbox" name="wc_sale_discord_disable_image" value="1"' . checked(1, $disable_image, false) . '/>';
+            },
             'wc_sale_discord_notifications',
             'wc_sale_discord_notifications_section'
         );
@@ -149,7 +161,9 @@ class Sale_Discord_Notifications_Woo {
     }
 
     public function send_discord_notification_on_status_change($order_id, $old_status, $new_status, $order) {
-        $this->send_discord_notification_common($order_id, 'update');
+        if ($old_status !== 'pending') {
+            $this->send_discord_notification_common($order_id, 'update');
+        }
     }
 
     private function send_discord_notification_common($order_id, $type) {
@@ -181,7 +195,7 @@ class Sale_Discord_Notifications_Woo {
 
         $order_data = $order->get_data();
         $order_id = $order_data['id'];
-        $order_status = wc_get_order_status_name($order->get_status());
+        $order_status = ucwords(wc_get_order_status_name($order->get_status()));
         $order_total = $order_data['total'];
         $order_currency = $order_data['currency'];
         $order_date = $order_data['date_created'];
@@ -236,7 +250,7 @@ class Sale_Discord_Notifications_Woo {
             $embed['fields'][] = ['name' => 'Transaction ID', 'value' => $transaction_id, 'inline' => false];
         }
 
-        if ($first_product_image) {
+        if ($first_product_image && !get_option('wc_sale_discord_disable_image')) {
             $embed['image'] = ['url' => $first_product_image];
         }
 
