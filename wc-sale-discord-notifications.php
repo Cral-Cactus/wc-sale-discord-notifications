@@ -3,7 +3,7 @@
  * Plugin Name: WC Sale Discord Notifications
  * Plugin URI: https://github.com/Cral-Cactus/wc-sale-discord-notifications
  * Description: Sends a notification to a Discord channel when a sale is made or order status changes on WooCommerce. Includes configurable message content and per-status webhooks.
- * Version: 2.2.0
+ * Version: 2.2.1
  * Author: Cral_Cactus + Custom Mod by Dex (product build)
  * Author URI: https://github.com/Cral-Cactus + https://github.com/Dextiz
  * Requires Plugins: woocommerce
@@ -245,17 +245,48 @@ class Sale_Discord_Notifications_Woo {
     }
 
     public function send_discord_notification($order_id) {
+    //only send through thank you if it's pending
+    $order = wc_get_order($order_id);
+    if (!$order) return;
+
+    if ($order->get_status() === 'pending') {
         $this->send_discord_notification_common($order_id, 'new');
     }
+}
+
 
     public function send_discord_notification_on_status_change($order_id, $old_status, $new_status, $order) {
-        $selected = get_option('wc_sale_discord_order_statuses', array());
-        $selected = is_array($selected) ? $selected : (array) maybe_unserialize($selected);
-        $target   = 'wc-' . $new_status;
-        if (in_array($target, $selected, true)) {
-            $this->send_discord_notification_common($order_id, 'update');
+    $selected = get_option('wc_sale_discord_order_statuses', array());
+    $selected = is_array($selected) ? $selected : (array) maybe_unserialize($selected);
+
+    $target = 'wc-' . $new_status;
+    if (!in_array($target, $selected, true)) {
+        return;
+    }
+
+    // If no previous Discord send for this order, treat this as "new"
+    $any_sent = false;
+    foreach (get_post_meta($order_id) as $key => $val) {
+        if (strpos($key, '_discord_sent_') === 0) {
+            $any_sent = true;
+            break;
         }
     }
+
+    // If we sent a "new" very recently, skip
+    $recent_new_sent = get_post_meta($order_id, '_discord_sent_' . $target . '_new', true);
+    if ($recent_new_sent) {
+        $sent_ts = strtotime($recent_new_sent);
+        if ($sent_ts && ( current_time('timestamp') - $sent_ts ) < 120) {
+            return;
+        }
+    }
+
+    $type = $any_sent ? 'update' : 'new';
+    $this->send_discord_notification_common($order_id, $type);
+}
+
+
 
     private function send_discord_notification_common($order_id, $type) {
         $order = wc_get_order($order_id);
