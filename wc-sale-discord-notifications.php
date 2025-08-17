@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WC Sale Discord Notifications
  * Plugin URI: https://github.com/Cral-Cactus/wc-sale-discord-notifications
- * Description: Sends a notification to a Discord channel when a sale is made or order status changes on WooCommerce. Includes configurable message content and per-status webhooks.
- * Version: 2.2.2
+ * Description: Sends a notification to a Discord channel when a sale is made or order status changes on WooCommerce. Includes configurable message content, per-status webhooks, and optional display of product add-ons.
+ * Version: 2.3.0
  * Author: Cral_Cactus + Custom Mod by Dex (product build)
  * Author URI: https://github.com/Cral-Cactus + https://github.com/Dextiz
  * Requires Plugins: woocommerce
@@ -107,7 +107,6 @@ class Sale_Discord_Notifications_Woo
             'default'           => array(),
         ));
 
-        // Robust boolean sanitization (handles 'on', '1', 1, true, 'true')
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_disable_image', array(
             'type'              => 'boolean',
             'sanitize_callback' => function ($v) {
@@ -116,10 +115,11 @@ class Sale_Discord_Notifications_Woo
             'default'           => 0,
         ));
 
+        // Allow choosing which info fields to include in the embed
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_info_fields', array(
             'type'              => 'array',
             'sanitize_callback' => function ($val) {
-                $allowed = array('status', 'payment', 'product', 'creation_date', 'billing', 'transaction_id');
+                $allowed = array('status', 'payment', 'product', 'product_meta', 'creation_date', 'billing', 'transaction_id');
                 $val = is_array($val) ? $val : array();
                 $val = array_values(array_intersect($val, $allowed));
                 return $val;
@@ -127,7 +127,7 @@ class Sale_Discord_Notifications_Woo
             'default'           => array(),
         ));
 
-        // NEW: Debug toggle to force blocking mode
+        // Debug toggle to force blocking requests
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_force_blocking', array(
             'type'              => 'boolean',
             'sanitize_callback' => function ($v) {
@@ -167,7 +167,6 @@ class Sale_Discord_Notifications_Woo
             'wc_sale_discord_notifications_section'
         );
 
-        // Hidden + checkbox to ensure unchecked state submits 0
         add_settings_field(
             'wc_sale_discord_disable_image',
             __('Disable product image in embed', 'wc-sale-discord-notifications'),
@@ -180,7 +179,6 @@ class Sale_Discord_Notifications_Woo
             'wc_sale_discord_notifications_section'
         );
 
-        // NEW: Debug toggle field
         add_settings_field(
             'wc_sale_discord_force_blocking',
             __('Debug: Force blocking HTTP requests', 'wc-sale-discord-notifications'),
@@ -224,7 +222,8 @@ class Sale_Discord_Notifications_Woo
         $fields  = array(
             'status'         => __('Status', 'wc-sale-discord-notifications'),
             'payment'        => __('Payment', 'wc-sale-discord-notifications'),
-            'product'        => __('Product', 'wc-sale-discord-notifications'),
+            'product'        => __('Product lines (name, qty, price)', 'wc-sale-discord-notifications'),
+            'product_meta'   => __('Product options (add-ons / custom fields)', 'wc-sale-discord-notifications'),
             'creation_date'  => __('Creation Date', 'wc-sale-discord-notifications'),
             'billing'        => __('Billing Information', 'wc-sale-discord-notifications'),
             'transaction_id' => __('Transaction ID', 'wc-sale-discord-notifications'),
@@ -287,7 +286,7 @@ class Sale_Discord_Notifications_Woo
         $order = wc_get_order($order_id);
         if (!$order) return;
 
-        // Only fire 'new' via thankyou for pending (manual or slow payments)
+        // Only fire 'new' via thankyou for pending (manual/slow payments)
         if ($order->get_status() === 'pending') {
             $this->send_discord_notification_common($order_id, 'new');
         }
@@ -312,7 +311,7 @@ class Sale_Discord_Notifications_Woo
             }
         }
 
-        // If no previous Discord send meta exists at all, this is the first notification = 'new'
+        // First notification for this order becomes 'new'
         $any_sent = false;
         $all_meta = get_post_meta($order_id);
         foreach ($all_meta as $key => $val) {
@@ -341,7 +340,7 @@ class Sale_Discord_Notifications_Woo
         $order_status = 'wc-' . $order->get_status();
         if (!in_array($order_status, $selected_statuses, true)) return;
 
-        // Status-specific duplicate protection per order & type
+        // Duplicate protection per status & type
         $status_meta_key = '_discord_sent_' . $order_status . '_' . $type;
         if (get_post_meta($order_id, $status_meta_key, true)) {
             return;
@@ -370,8 +369,11 @@ class Sale_Discord_Notifications_Woo
         $billing_discord    = $order->get_meta('_billing_discord');
 
         $order_items         = $order->get_items();
-        $items_list          = '';
+        $item_lines          = array();
         $first_product_image = '';
+
+        $include_product      = in_array('product', (array) $enabled_fields, true);
+        $include_product_meta = in_array('product_meta', (array) $enabled_fields, true);
 
         foreach ($order_items as $item) {
             $product = $item->get_product();
@@ -381,46 +383,70 @@ class Sale_Discord_Notifications_Woo
                     $first_product_image = wp_get_attachment_url($img_id);
                 }
             }
+
+            // Base line: qty x name - total
             $product_name  = $item->get_name();
             $product_qty   = $item->get_quantity();
             $product_total = $item->get_total();
+            $line_total    = html_entity_decode(wp_strip_all_tags(wc_price($product_total, array('currency' => $order_currency))));
+            $line          = "{$product_qty}x {$product_name} - {$line_total}";
 
-            $line_total_html = wc_price($product_total, array('currency' => $order_currency));
-            $line_total      = html_entity_decode(wp_strip_all_tags($line_total_html));
-            $items_list     .= "{$product_qty}x {$product_name} - {$line_total}\n";
+            // Append meta/add-ons if enabled (uses WC formatted meta; hides underscore/private meta)
+            if ($include_product_meta) {
+                $meta_data = $item->get_formatted_meta_data(); // default hides keys starting with '_'
+                if (!empty($meta_data)) {
+                    foreach ($meta_data as $meta) {
+                        $k = wp_strip_all_tags($meta->display_key);
+                        $v = is_scalar($meta->display_value) ? (string) $meta->display_value : wp_strip_all_tags(wc_clean(wp_json_encode($meta->display_value)));
+                        $v = wp_strip_all_tags($v);
+                        if ($k !== '' && $v !== '') {
+                            $line .= "\n   • {$k}: {$v}";
+                        }
+                    }
+                }
+            }
+
+            $item_lines[] = $line;
         }
-        $items_list = rtrim($items_list, "\n");
 
+        // Build Product field value (if requested)
+        $embed_fields = array();
         $order_edit_url    = admin_url('post.php?post=' . absint($order_id) . '&action=edit');
         $embed_title       = ($type === 'new') ? '🎉 New Order' : '🪄 Order Update';
         $order_status_name = wc_get_order_status_name($order->get_status());
 
-        $embed_fields   = array();
         $embed_fields[] = array('name' => 'Order ID', 'value' => "[#{$order_id}]({$order_edit_url})", 'inline' => false);
 
         if (in_array('status', (array) $enabled_fields, true)) {
             $embed_fields[] = array('name' => 'Status', 'value' => $order_status_name, 'inline' => false);
         }
+
         if (in_array('payment', (array) $enabled_fields, true)) {
-            $order_total_fmt_html = $order->get_formatted_order_total();
-            $order_total_fmt      = html_entity_decode(wp_strip_all_tags($order_total_fmt_html));
-            $embed_fields[]       = array('name' => 'Payment', 'value' => "{$order_total_fmt} — {$payment_method}", 'inline' => false);
+            $order_total_fmt = html_entity_decode(wp_strip_all_tags($order->get_formatted_order_total()));
+            $embed_fields[]  = array('name' => 'Payment', 'value' => "{$order_total_fmt} — {$payment_method}", 'inline' => false);
         }
-        if (in_array('product', (array) $enabled_fields, true)) {
-            $embed_fields[] = array('name' => 'Product', 'value' => $items_list ? $items_list : '-', 'inline' => false);
+
+        if ($include_product) {
+            $items_list = implode("\n", $item_lines);
+            $items_list = $this->truncate_field($items_list, 1000); // Discord embed field value limit is 1024 chars
+            $embed_fields[] = array('name' => 'Product', 'value' => ($items_list !== '' ? $items_list : '-'), 'inline' => false);
         }
+
         if (in_array('creation_date', (array) $enabled_fields, true)) {
             $embed_fields[] = array('name' => 'Creation Date', 'value' => "<t:{$order_timestamp}:d> (<t:{$order_timestamp}:R>)", 'inline' => false);
         }
+
         if (in_array('billing', (array) $enabled_fields, true)) {
             $billing_info = "**Name** » {$billing_first_name} {$billing_last_name}\n**Email** » {$billing_email}";
             if (!empty($billing_discord)) {
                 $billing_info .= "\n**Discord** » {$billing_discord}";
             }
+            $billing_info = $this->truncate_field($billing_info, 1000);
             $embed_fields[] = array('name' => 'Billing Information', 'value' => $billing_info, 'inline' => true);
         }
+
         if (in_array('transaction_id', (array) $enabled_fields, true) && !empty($transaction_id)) {
-            $embed_fields[] = array('name' => 'Transaction ID', 'value' => $transaction_id, 'inline' => false);
+            $embed_fields[] = array('name' => 'Transaction ID', 'value' => $this->truncate_field($transaction_id, 1000), 'inline' => false);
         }
 
         $embed = array(
@@ -436,6 +462,15 @@ class Sale_Discord_Notifications_Woo
         $this->send_to_discord($webhook_url, $embed, $order_id, $order_status, $type);
     }
 
+    private function truncate_field($text, $limit = 1000)
+    {
+        $text = (string) $text;
+        if (mb_strlen($text) <= $limit) {
+            return $text;
+        }
+        return mb_substr($text, 0, $limit - 6) . " [...]";
+    }
+
     private function send_to_discord($webhook_url, $embed, $order_id = null, $order_status = '', $type = '')
     {
         $data = wp_json_encode(array('embeds' => array($embed)));
@@ -443,17 +478,15 @@ class Sale_Discord_Notifications_Woo
             'body'     => $data,
             'headers'  => array('Content-Type' => 'application/json'),
             'timeout'  => 20,
-            'blocking' => false, // default for performance
+            'blocking' => false,
         );
 
-        // Debug toggle from settings: force blocking mode for troubleshooting
         $force_blocking = (int) get_option('wc_sale_discord_force_blocking', 0);
         if ($force_blocking) {
             $args['blocking'] = true;
             $args['timeout']  = max(30, (int) $args['timeout']);
         }
 
-        // Allow forcing blocking or other args via filter, takes precedence
         $args = apply_filters('wc_sale_discord_http_args', $args, $order_id, $order_status, $type, $webhook_url);
 
         $response = wp_remote_post($webhook_url, $args);
