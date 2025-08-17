@@ -12,7 +12,8 @@
 - ✅ Customizable message fields:
   - Order Status
   - Payment Info
-  - Product List
+  - Product Lines (names, qty, price)
+  - Product Options (add-ons / Custom fields)
   - Order Date
   - Billing Info
   - Transaction ID
@@ -82,6 +83,10 @@ Pull requests welcome!
 ---
 
 ## 📜 Changelog
+
+### 2.3
+- Add support for custom product fields in Discord notifications
+- New toggle "Custom Fields" in settings, (When enabled, product-level custom fields (from addons/APF) are included in order item details)
 
 ### 2.2
 - Implemented per-status duplicate protection using order meta instead of global flag
