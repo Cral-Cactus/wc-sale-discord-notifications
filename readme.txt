@@ -1,15 +1,16 @@
 === WC Sale Discord Notifications ===
 Contributors: cralcactus
-Tags: woocommerce, discord, notifications, sales, webhooks, orders
+Tags: discord, woocommerce, notifications, sales, orders
 Requires at least: 6.2
+Requires PHP: 7.4
 Tested up to: 6.8.2
 WC requires at least: 8.5
 WC tested up to: 10.1.2
-Version: 3.0
+Stable tag: 3.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-A powerful WooCommerce extension that sends order updates directly to your Discord server. Now with configurable message fields, status-specific webhooks/colors, and built-in duplicate protection.
+A powerful WooCommerce extension that sends order updates directly to your Discord server. ✨
 
 == Description ==
 
@@ -17,30 +18,31 @@ This plugin sends a Discord notification for WooCommerce order events. It uses n
 
 == Features ==
 
-* Customizable message fields:
-  * Order Status
-  * Payment Info
-  * Product Lines (names, qty, price)
-  * Product Options (add-ons / custom fields)
-  * Order Date
-  * Billing Info
-  * Transaction ID
-* Option to disable product image in the embed
-* Per-status webhook URL and embed color
-* Duplicate-send protection via internal tracking
-* Built using native WordPress/WooCommerce APIs
-* Compatible with WooCommerce Custom Order Tables (v8+)
+* ✅ Customizable message fields:
+  * 🏷️ Order Status
+  * 💳 Payment Info
+  * 🛒 Product Lines (names, qty, price)
+  * 🧩 Product Options (add-ons / custom fields)
+  * 📅 Order Date
+  * 👤 Billing Info
+  * 🔢 Transaction ID
+* 🖼️ Option to disable product image in the embed
+* 🧩 Per-status webhook URL and embed color
+* 🔒 Duplicate-send protection via internal tracking
+* ⚙️ Built using native WordPress/WooCommerce APIs
+* 🧠 Compatible with WooCommerce Custom Order Tables (v8+)
 
 == Requirements ==
 
 * WordPress 6.2 or higher (tested up to 6.8.2)
 * WooCommerce 8.5 or higher (tested up to 10.1.2)
+* PHP 7.4 or higher
 
 == Installation ==
 
 1. Download this plugin or clone the repo into `/wp-content/plugins/wc-sale-discord-notifications`.
-2. Activate the plugin via **Plugins → Installed Plugins**.
-3. Go to **WooCommerce → Discord Notifications**.
+2. Activate the plugin via **Plugins <span aria-hidden="true" class="wp-exclude-emoji"><span aria-hidden="true" class="wp-exclude-emoji"><span aria-hidden="true" class="wp-exclude-emoji">→</span></span></span> Installed Plugins**.
+3. Go to **WooCommerce <span aria-hidden="true" class="wp-exclude-emoji"><span aria-hidden="true" class="wp-exclude-emoji"><span aria-hidden="true" class="wp-exclude-emoji">→</span></span></span> Discord Notifications**.
 4. Configure your settings.
 
 == Configuration ==
@@ -65,14 +67,14 @@ To prevent duplicate Discord messages (for example, if the thank-you page is ref
 
 == Usage ==
 
-1. After installing and activating the plugin, go to **WooCommerce → Discord Notifications**.
+1. After installing and activating the plugin, go to **WooCommerce <span aria-hidden="true" class="wp-exclude-emoji"><span aria-hidden="true" class="wp-exclude-emoji"><span aria-hidden="true" class="wp-exclude-emoji">→</span></span></span> Discord Notifications**.
 2. Paste your Discord Webhook URL and select which statuses should send notifications.
 3. Choose which fields to include and whether to show product images.
 4. Save your settings.
 
 == Screenshots ==
 
-1. Settings page under WooCommerce → Discord Notifications
+1. Settings page under WooCommerce <span aria-hidden="true" class="wp-exclude-emoji"><span aria-hidden="true" class="wp-exclude-emoji"><span aria-hidden="true" class="wp-exclude-emoji">→</span></span></span> Discord Notifications
 
 == Changelog ==
 
@@ -113,4 +115,4 @@ To prevent duplicate Discord messages (for example, if the thank-you page is ref
 
 == Support ==
 
-Found a bug or have a suggestion? Open an issue on the GitHub repo: https://github.com/Cral-Cactus/wc-sale-discord-notifications/issues
+Found a bug or have a suggestion? Open an issue on the GitHub repo: [https://github.com/Cral-Cactus/wc-sale-discord-notifications/issues](https://github.com/Cral-Cactus/wc-sale-discord-notifications/issues)
