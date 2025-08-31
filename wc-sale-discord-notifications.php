@@ -3,7 +3,7 @@
  * Plugin Name: WC Sale Discord Notifications
  * Plugin URI: https://github.com/Cral-Cactus/wc-sale-discord-notifications
  * Description: Sends a notification to a Discord channel when a sale is made or order status changes on WooCommerce. Includes configurable message content, per-status webhooks, and optional display of product add-ons.
- * Version: 2.3.1
+ * Version: 3.0.0
  * Author: Cral_Cactus
  * Author URI: https://github.com/Cral-Cactus
  * Requires Plugins: woocommerce
