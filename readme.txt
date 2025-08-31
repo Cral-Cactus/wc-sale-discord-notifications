@@ -75,6 +75,7 @@ To prevent duplicate Discord messages (for example, if the thank-you page is ref
 == Screenshots ==
 
 1. Settings page under WooCommerce <span aria-hidden="true" class="wp-exclude-emoji"><span aria-hidden="true" class="wp-exclude-emoji"><span aria-hidden="true" class="wp-exclude-emoji">→</span></span></span> Discord Notifications
+2. Image of a completed order Discord webhook
 
 == Changelog ==
 
