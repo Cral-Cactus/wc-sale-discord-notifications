@@ -27,8 +27,8 @@
 
 ## 🧰 Requirements
 
-- WordPress 6.2 or higher (tested up to 6.6.2)
-- WooCommerce 8.5 or higher (tested up to 10.1.0)
+- WordPress 6.2 or higher (tested up to 6.8.2)
+- WooCommerce 8.5 or higher (tested up to 10.1.2)
 
 ---
 
@@ -75,7 +75,10 @@ This ensures each notification is only sent **once per order event**.
 
 Built and maintained by:
 
+**Author:**
 - [Cral_Cactus](https://github.com/Cral-Cactus)
+
+**Contributors**
 - [Dex (ComFoo)](https://github.com/Dextiz)
 
 Pull requests welcome!
@@ -83,6 +86,9 @@ Pull requests welcome!
 ---
 
 ## 📜 Changelog
+
+### 3.0
+- Updated plugin logo
 
 ### 2.3
 - Add support for custom product fields in Discord notifications
@@ -118,5 +124,3 @@ Pull requests welcome!
 
 Found a bug? Have a suggestion?  
 Open an issue on the [GitHub repo](https://github.com/Cral-Cactus/wc-sale-discord-notifications/issues).
-
-

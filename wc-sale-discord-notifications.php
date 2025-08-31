@@ -4,17 +4,17 @@
  * Plugin URI: https://github.com/Cral-Cactus/wc-sale-discord-notifications
  * Description: Sends a notification to a Discord channel when a sale is made or order status changes on WooCommerce. Includes configurable message content, per-status webhooks, and optional display of product add-ons.
  * Version: 2.3.1
- * Author: Cral_Cactus + Custom Mod by Dex (product build)
- * Author URI: https://github.com/Cral-Cactus + https://github.com/Dextiz
+ * Author: Cral_Cactus
+ * Author URI: https://github.com/Cral-Cactus
  * Requires Plugins: woocommerce
  * Requires at least: 6.2
- * Tested up to: 6.8.1
+ * Tested up to: 6.8.2
  * WC requires at least: 8.5
- * WC tested up to: 9.9.5
+ * WC tested up to: 10.1.2
  * License: GPLv3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: wc-sale-discord-notifications
- */
+*/
 
 if (!defined('ABSPATH')) exit;
 
@@ -27,7 +27,7 @@ add_action('before_woocommerce_init', function () {
 class Sale_Discord_Notifications_Woo
 {
     const OPTION_GROUP = 'wc_sale_discord_notifications';
-    const PAGE_SLUG    = 'wc-sale-discord-notifications';
+    const PAGE_SLUG = 'wc-sale-discord-notifications';
 
     public function __construct()
     {
@@ -62,24 +62,24 @@ class Sale_Discord_Notifications_Woo
     public function register_settings()
     {
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_webhook_url', array(
-            'type'              => 'string',
+            'type' => 'string',
             'sanitize_callback' => 'esc_url_raw',
-            'default'           => '',
-            'show_in_rest'      => false,
+            'default' => '',
+            'show_in_rest' => false,
         ));
 
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_order_statuses', array(
-            'type'              => 'array',
+            'type' => 'array',
             'sanitize_callback' => function ($val) {
                 $val = is_array($val) ? $val : array();
                 $val = array_map('sanitize_text_field', $val);
                 return array_values(array_filter($val));
             },
-            'default'           => array(),
+            'default' => array(),
         ));
 
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_status_webhooks', array(
-            'type'              => 'array',
+            'type' => 'array',
             'sanitize_callback' => function ($val) {
                 $out = array();
                 if (is_array($val)) {
@@ -89,11 +89,11 @@ class Sale_Discord_Notifications_Woo
                 }
                 return $out;
             },
-            'default'           => array(),
+            'default' => array(),
         ));
 
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_status_colors', array(
-            'type'              => 'array',
+            'type' => 'array',
             'sanitize_callback' => function ($val) {
                 $out = array();
                 if (is_array($val)) {
@@ -104,7 +104,7 @@ class Sale_Discord_Notifications_Woo
                 }
                 return $out;
             },
-            'default'           => array(),
+            'default' => array(),
         ));
 
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_disable_image', array(
@@ -112,28 +112,28 @@ class Sale_Discord_Notifications_Woo
             'sanitize_callback' => function ($v) {
                 return ($v === 'on' || $v === '1' || $v === 1 || $v === true || $v === 'true') ? 1 : 0;
             },
-            'default'           => 0,
+            'default' => 0,
         ));
 
         // Allow choosing which info fields to include in the embed
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_info_fields', array(
-            'type'              => 'array',
+            'type' => 'array',
             'sanitize_callback' => function ($val) {
                 $allowed = array('status', 'payment', 'product', 'product_meta', 'creation_date', 'billing', 'transaction_id');
                 $val = is_array($val) ? $val : array();
                 $val = array_values(array_intersect($val, $allowed));
                 return $val;
             },
-            'default'           => array(),
+            'default' => array(),
         ));
 
         // Debug toggle to force blocking requests
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_force_blocking', array(
-            'type'              => 'boolean',
+            'type' => 'boolean',
             'sanitize_callback' => function ($v) {
                 return ($v === 'on' || $v === '1' || $v === 1 || $v === true || $v === 'true') ? 1 : 0;
             },
-            'default'           => 0,
+            'default' => 0,
         ));
 
         add_settings_section(
@@ -220,12 +220,12 @@ class Sale_Discord_Notifications_Woo
     {
         $options = get_option('wc_sale_discord_info_fields', array());
         $fields  = array(
-            'status'         => __('Status', 'wc-sale-discord-notifications'),
-            'payment'        => __('Payment', 'wc-sale-discord-notifications'),
-            'product'        => __('Product lines (name, qty, price)', 'wc-sale-discord-notifications'),
-            'product_meta'   => __('Product options (add-ons / custom fields)', 'wc-sale-discord-notifications'),
-            'creation_date'  => __('Creation Date', 'wc-sale-discord-notifications'),
-            'billing'        => __('Billing Information', 'wc-sale-discord-notifications'),
+            'status' => __('Status', 'wc-sale-discord-notifications'),
+            'payment' => __('Payment', 'wc-sale-discord-notifications'),
+            'product' => __('Product lines (name, qty, price)', 'wc-sale-discord-notifications'),
+            'product_meta' => __('Product options (add-ons / custom fields)', 'wc-sale-discord-notifications'),
+            'creation_date' => __('Creation Date', 'wc-sale-discord-notifications'),
+            'billing' => __('Billing Information', 'wc-sale-discord-notifications'),
             'transaction_id' => __('Transaction ID', 'wc-sale-discord-notifications'),
         );
         foreach ($fields as $key => $label) {
@@ -235,27 +235,27 @@ class Sale_Discord_Notifications_Woo
 
     public function discord_order_statuses_callback()
     {
-        $order_statuses    = wc_get_order_statuses();
+        $order_statuses = wc_get_order_statuses();
         $selected_statuses = get_option('wc_sale_discord_order_statuses', array());
         $selected_statuses = is_array($selected_statuses) ? $selected_statuses : (array) maybe_unserialize($selected_statuses);
 
         $status_webhooks = get_option('wc_sale_discord_status_webhooks', array());
-        $status_colors   = get_option('wc_sale_discord_status_colors', array());
+        $status_colors = get_option('wc_sale_discord_status_colors', array());
 
         $default_colors = array(
-            'wc-pending'    => '#ffdc00',
+            'wc-pending' => '#ffdc00',
             'wc-processing' => '#00e5ed',
-            'wc-on-hold'    => '#FFA500',
-            'wc-completed'  => '#00d660',
-            'wc-cancelled'  => '#d60000',
-            'wc-refunded'   => '#6800e0',
-            'wc-failed'     => '#111111',
+            'wc-on-hold' => '#FFA500',
+            'wc-completed' => '#08d665',
+            'wc-cancelled' => '#d60000',
+            'wc-refunded' => '#6800e0',
+            'wc-failed' => '#111111',
         );
 
         foreach ($order_statuses as $status => $label) {
             $is_checked = in_array($status, $selected_statuses, true);
-            $webhook    = isset($status_webhooks[$status]) ? $status_webhooks[$status] : '';
-            $color      = isset($status_colors[$status]) ? $status_colors[$status] : (isset($default_colors[$status]) ? $default_colors[$status] : '#ffffff');
+            $webhook = isset($status_webhooks[$status]) ? $status_webhooks[$status] : '';
+            $color = isset($status_colors[$status]) ? $status_colors[$status] : (isset($default_colors[$status]) ? $default_colors[$status] : '#ffffff');
 
             echo '<p style="margin-bottom: 10px;">';
             echo '<label style="margin-right: 10px;">';
@@ -325,154 +325,152 @@ class Sale_Discord_Notifications_Woo
         $this->send_discord_notification_common($order_id, $type);
     }
 
-   /**
- * Common builder for Discord embed + duplicate protection per status/type.
- *
- * @param int    $order_id
- * @param string $type  'new'|'update'
- */
-private function send_discord_notification_common($order_id, $type)
-{
-    $order = wc_get_order($order_id);
-    if (!$order) return;
+    /**
+     * Common builder for Discord embed + duplicate protection per status/type.
+     *
+     * @param int    $order_id
+     * @param string $type  'new'|'update'
+    */
+    private function send_discord_notification_common($order_id, $type)
+    {
+        $order = wc_get_order($order_id);
+        if (!$order) return;
 
-    $selected_statuses = get_option('wc_sale_discord_order_statuses', array());
-    $selected_statuses = is_array($selected_statuses) ? $selected_statuses : (array) maybe_unserialize($selected_statuses);
+        $selected_statuses = get_option('wc_sale_discord_order_statuses', array());
+        $selected_statuses = is_array($selected_statuses) ? $selected_statuses : (array) maybe_unserialize($selected_statuses);
 
-    $status_webhooks = get_option('wc_sale_discord_status_webhooks', array());
-    $status_colors   = get_option('wc_sale_discord_status_colors', array());
-    $enabled_fields  = get_option('wc_sale_discord_info_fields', array());
+        $status_webhooks = get_option('wc_sale_discord_status_webhooks', array());
+        $status_colors = get_option('wc_sale_discord_status_colors', array());
+        $enabled_fields = get_option('wc_sale_discord_info_fields', array());
 
-    $order_status = 'wc-' . $order->get_status();
-    if (!in_array($order_status, $selected_statuses, true)) return;
+        $order_status = 'wc-' . $order->get_status();
+        if (!in_array($order_status, $selected_statuses, true)) return;
 
-    // Status-specific duplicate protection per order & type
-    $status_meta_key = '_discord_sent_' . $order_status . '_' . $type;
-    if (get_post_meta($order_id, $status_meta_key, true)) {
-        return;
-    }
-
-    $webhook_url = !empty($status_webhooks[$order_status]) ? $status_webhooks[$order_status] : get_option('wc_sale_discord_webhook_url');
-    if (!$webhook_url) return;
-
-    // Color
-    $hex         = !empty($status_colors[$order_status]) ? $status_colors[$order_status] : '#ffffff';
-    $hex         = sanitize_hex_color($hex) ?: '#ffffff';
-    $embed_color = hexdec(ltrim($hex, '#'));
-
-    // Order data
-    $order_data      = $order->get_data();
-    $order_currency  = $order_data['currency'];
-    $order_date      = $order_data['date_created'];
-    $order_timestamp = $order_date ? $order_date->getTimestamp() : time();
-
-    $payment_method = !empty($order_data['payment_method_title']) ? $order_data['payment_method_title'] : $order->get_payment_method();
-    $transaction_id = !empty($order_data['transaction_id']) ? $order_data['transaction_id'] : $order->get_transaction_id();
-
-    $billing_first_name = $order_data['billing']['first_name'];
-    $billing_last_name  = $order_data['billing']['last_name'];
-    $billing_email      = $order_data['billing']['email'];
-    $billing_discord    = $order->get_meta('_billing_discord');
-
-    // ===== Items + first image (styled) =====
-    $order_items         = $order->get_items();
-    $item_lines          = array();
-    $first_product_image = '';
-
-    $include_product      = in_array('product', (array) $enabled_fields, true);
-    $include_product_meta = in_array('product_meta', (array) $enabled_fields, true);
-
-    foreach ($order_items as $item) {
-        $product = $item->get_product();
-        if ($first_product_image === '' && $product) {
-            $img_id = $product->get_image_id();
-            if ($img_id) {
-                $first_product_image = wp_get_attachment_url($img_id);
-            }
+        // Status-specific duplicate protection per order & type
+        $status_meta_key = '_discord_sent_' . $order_status . '_' . $type;
+        if (get_post_meta($order_id, $status_meta_key, true)) {
+            return;
         }
 
-        $product_name  = wp_strip_all_tags($item->get_name());
-        $product_qty   = $item->get_quantity();
-        $product_total = $item->get_total();
-        $line_total    = html_entity_decode(wp_strip_all_tags(wc_price($product_total, array('currency' => $order_currency))));
+        $webhook_url = !empty($status_webhooks[$order_status]) ? $status_webhooks[$order_status] : get_option('wc_sale_discord_webhook_url');
+        if (!$webhook_url) return;
 
-        // Bold product name; use typographic × and —
-        $line = "**{$product_qty}× {$product_name}** — {$line_total}";
+        // Color
+        $hex = !empty($status_colors[$order_status]) ? $status_colors[$order_status] : '#ffffff';
+        $hex = sanitize_hex_color($hex) ?: '#ffffff';
+        $embed_color = hexdec(ltrim($hex, '#'));
 
-        // Append add-ons / custom fields (bold values)
-        if ($include_product_meta) {
-            $meta_data = $item->get_formatted_meta_data(); // hides private keys (_prefix)
-            if (!empty($meta_data)) {
-                foreach ($meta_data as $meta) {
-                    $k = wp_strip_all_tags($meta->display_key);
-                    $v = is_scalar($meta->display_value) ? (string) $meta->display_value : wp_json_encode($meta->display_value);
-                    $v = trim(wp_strip_all_tags($v));
-                    if ($k !== '' && $v !== '') {
-                        // Example: • Select Sharedfile Type: **Steam Artwork**
-                        $line .= "\n   • {$k}: **{$v}**";
+        // Order data
+        $order_data = $order->get_data();
+        $order_currency = $order_data['currency'];
+        $order_date = $order_data['date_created'];
+        $order_timestamp = $order_date ? $order_date->getTimestamp() : time();
+
+        $payment_method = !empty($order_data['payment_method_title']) ? $order_data['payment_method_title'] : $order->get_payment_method();
+        $transaction_id = !empty($order_data['transaction_id']) ? $order_data['transaction_id'] : $order->get_transaction_id();
+
+        $billing_first_name = $order_data['billing']['first_name'];
+        $billing_last_name = $order_data['billing']['last_name'];
+        $billing_email = $order_data['billing']['email'];
+        $billing_discord = $order->get_meta('_billing_discord');
+
+        // Items + first image
+        $order_items = $order->get_items();
+        $item_lines = array();
+        $first_product_image = '';
+
+        $include_product = in_array('product', (array) $enabled_fields, true);
+        $include_product_meta = in_array('product_meta', (array) $enabled_fields, true);
+
+        foreach ($order_items as $item) {
+            $product = $item->get_product();
+            if ($first_product_image === '' && $product) {
+                $img_id = $product->get_image_id();
+                if ($img_id) {
+                    $first_product_image = wp_get_attachment_url($img_id);
+                }
+            }
+
+            $product_name = wp_strip_all_tags($item->get_name());
+            $product_qty = $item->get_quantity();
+            $product_total = $item->get_total();
+            $line_total = html_entity_decode(wp_strip_all_tags(wc_price($product_total, array('currency' => $order_currency))));
+
+            // Bold product name; use typographic × and -
+            $line = "**{$product_qty}× {$product_name}** - {$line_total}";
+
+            // Append add-ons / custom fields (bold values)
+            if ($include_product_meta) {
+                $meta_data = $item->get_formatted_meta_data(); // hides private keys (_prefix)
+                if (!empty($meta_data)) {
+                    foreach ($meta_data as $meta) {
+                        $k = wp_strip_all_tags($meta->display_key);
+                        $v = is_scalar($meta->display_value) ? (string) $meta->display_value : wp_json_encode($meta->display_value);
+                        $v = trim(wp_strip_all_tags($v));
+                        if ($k !== '' && $v !== '') {
+                            // Example: • Select Sharedfile Type: **Steam Artwork**
+                            $line .= "\n   • {$k}: **{$v}**";
+                        }
                     }
                 }
             }
+
+            $item_lines[] = $line;
         }
 
-        $item_lines[] = $line;
-    }
-    // =======================================
+        $order_edit_url = admin_url('post.php?post=' . absint($order_id) . '&action=edit');
+        $embed_title = ($type === 'new') ? '🎉 New Order' : '🪄 Order Update';
+        $order_status_name = wc_get_order_status_name($order->get_status());
 
-    $order_edit_url    = admin_url('post.php?post=' . absint($order_id) . '&action=edit');
-    $embed_title       = ($type === 'new') ? '🎉 New Order' : '🪄 Order Update';
-    $order_status_name = wc_get_order_status_name($order->get_status());
+        // Build fields
+        $embed_fields = array();
+        $embed_fields[] = array('name' => 'Order ID', 'value' => "[#{$order_id}]({$order_edit_url})", 'inline' => false);
 
-    // Build fields
-    $embed_fields   = array();
-    $embed_fields[] = array('name' => 'Order ID', 'value' => "[#{$order_id}]({$order_edit_url})", 'inline' => false);
-
-    if (in_array('status', (array) $enabled_fields, true)) {
-        $embed_fields[] = array('name' => 'Status', 'value' => $order_status_name, 'inline' => false);
-    }
-
-    if (in_array('payment', (array) $enabled_fields, true)) {
-        $order_total_fmt = html_entity_decode(wp_strip_all_tags($order->get_formatted_order_total()));
-        $embed_fields[]  = array('name' => 'Payment', 'value' => "{$order_total_fmt} — {$payment_method}", 'inline' => false);
-    }
-
-    if ($include_product) {
-        $items_list = implode("\n", $item_lines);
-        // Keep under Discord’s 1024 char limit per field
-        $items_list = $this->truncate_field($items_list, 1000);
-        $embed_fields[] = array('name' => 'Product', 'value' => ($items_list !== '' ? $items_list : '-'), 'inline' => false);
-    }
-
-    if (in_array('creation_date', (array) $enabled_fields, true)) {
-        $embed_fields[] = array('name' => 'Creation Date', 'value' => "<t:{$order_timestamp}:d> (<t:{$order_timestamp}:R>)", 'inline' => false);
-    }
-
-    if (in_array('billing', (array) $enabled_fields, true)) {
-        $billing_info = "**Name** » {$billing_first_name} {$billing_last_name}\n**Email** » {$billing_email}";
-        if (!empty($billing_discord)) {
-            $billing_info .= "\n**Discord** » {$billing_discord}";
+        if (in_array('status', (array) $enabled_fields, true)) {
+            $embed_fields[] = array('name' => 'Status', 'value' => $order_status_name, 'inline' => false);
         }
-        $billing_info = $this->truncate_field($billing_info, 1000);
-        $embed_fields[] = array('name' => 'Billing Information', 'value' => $billing_info, 'inline' => true);
+
+        if (in_array('payment', (array) $enabled_fields, true)) {
+            $order_total_fmt = html_entity_decode(wp_strip_all_tags($order->get_formatted_order_total()));
+            $embed_fields[] = array('name' => 'Payment', 'value' => "{$order_total_fmt} - {$payment_method}", 'inline' => false);
+        }
+
+        if ($include_product) {
+            $items_list = implode("\n", $item_lines);
+            // Keep under Discord’s 1024 char limit per field
+            $items_list = $this->truncate_field($items_list, 1000);
+            $embed_fields[] = array('name' => 'Product', 'value' => ($items_list !== '' ? $items_list : '-'), 'inline' => false);
+        }
+
+        if (in_array('creation_date', (array) $enabled_fields, true)) {
+            $embed_fields[] = array('name' => 'Creation Date', 'value' => "<t:{$order_timestamp}:d> (<t:{$order_timestamp}:R>)", 'inline' => false);
+        }
+
+        if (in_array('billing', (array) $enabled_fields, true)) {
+            $billing_info = "**Name** » {$billing_first_name} {$billing_last_name}\n**Email** » {$billing_email}";
+            if (!empty($billing_discord)) {
+                $billing_info .= "\n**Discord** » {$billing_discord}";
+            }
+            $billing_info = $this->truncate_field($billing_info, 1000);
+            $embed_fields[] = array('name' => 'Billing Information', 'value' => $billing_info, 'inline' => true);
+        }
+
+        if (in_array('transaction_id', (array) $enabled_fields, true) && !empty($transaction_id)) {
+            $embed_fields[] = array('name' => 'Transaction ID', 'value' => $this->truncate_field($transaction_id, 1000), 'inline' => false);
+        }
+
+        $embed = array(
+            'title' => $embed_title,
+            'fields' => $embed_fields,
+            'color' => $embed_color,
+        );
+
+        if ($first_product_image && !get_option('wc_sale_discord_disable_image')) {
+            $embed['image'] = array('url' => $first_product_image);
+        }
+
+        $this->send_to_discord($webhook_url, $embed, $order_id, $order_status, $type);
     }
-
-    if (in_array('transaction_id', (array) $enabled_fields, true) && !empty($transaction_id)) {
-        $embed_fields[] = array('name' => 'Transaction ID', 'value' => $this->truncate_field($transaction_id, 1000), 'inline' => false);
-    }
-
-    $embed = array(
-        'title'  => $embed_title,
-        'fields' => $embed_fields,
-        'color'  => $embed_color,
-    );
-
-    if ($first_product_image && !get_option('wc_sale_discord_disable_image')) {
-        $embed['image'] = array('url' => $first_product_image);
-    }
-
-    $this->send_to_discord($webhook_url, $embed, $order_id, $order_status, $type);
-}
-
 
     private function truncate_field($text, $limit = 1000)
     {
@@ -487,16 +485,16 @@ private function send_discord_notification_common($order_id, $type)
     {
         $data = wp_json_encode(array('embeds' => array($embed)));
         $args = array(
-            'body'     => $data,
-            'headers'  => array('Content-Type' => 'application/json'),
-            'timeout'  => 20,
+            'body' => $data,
+            'headers' => array('Content-Type' => 'application/json'),
+            'timeout' => 20,
             'blocking' => false,
         );
 
         $force_blocking = (int) get_option('wc_sale_discord_force_blocking', 0);
         if ($force_blocking) {
             $args['blocking'] = true;
-            $args['timeout']  = max(30, (int) $args['timeout']);
+            $args['timeout'] = max(30, (int) $args['timeout']);
         }
 
         $args = apply_filters('wc_sale_discord_http_args', $args, $order_id, $order_status, $type, $webhook_url);
