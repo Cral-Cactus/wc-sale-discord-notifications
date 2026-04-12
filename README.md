@@ -16,6 +16,8 @@
   - Product Options (add-ons / custom fields)
   - Order Date
   - Billing Info
+  - New or returning customer
+  - Shipping method (freight)
   - Transaction ID
   - Order Notes (customer and/or internal)
 - ⏳ Initiating payment notification – get notified when a customer begins the payment process (pending)
@@ -27,6 +29,9 @@
 - ⚙️ Built using native WordPress/WooCommerce APIs
 - 🧠 Compatible with WooCommerce Custom Order Tables (HPOS)
 - 📦 Subscription-aware titles when WooCommerce Subscriptions is active (New subscription, Subscription Renewal)
+- 🚚 Optional shipping method field (chosen freight and price) in the embed
+- ↕️ **Embed field order** – drag-and-drop in settings to arrange fields in Discord (including Order ID)
+- 👤 Optional **New or returning customer** field (based on prior qualifying orders)
 
 ---
 
@@ -58,18 +63,21 @@
    - Choose unique embed colors
 
 3. **Embed Fields**  
-   Select which fields should appear in the Discord embed (status, payment, product, product meta, creation date, billing, transaction ID, order notes).
+   Select which fields should appear in the Discord embed (status, payment, product, product meta, creation date, billing, new/returning customer, shipping method, transaction ID, order notes).
 
-4. **Customer notes only**  
+4. **Embed field order**  
+   Drag rows to set the order fields appear in Discord. Fields disabled under Embed Fields are still omitted when sending.
+
+5. **Customer notes only**  
    When Order Notes is included, show only customer notes (exclude internal/admin notes).
 
-5. **Disable Product Image**  
+6. **Disable Product Image**  
    Toggle to prevent product image from appearing in the embed.
 
-6. **Send notification for Initiating payments**  
+7. **Send notification for Initiating payments**  
    When enabled, sends a distinct "⏳ Initiating payment" notification for pending orders. When payment completes, sends "🎉 New Order!" for processing.
 
-7. **Debug: Force blocking HTTP requests**  
+8. **Debug: Force blocking HTTP requests**  
    Enable for troubleshooting (may slow down checkout).
 
 ---
@@ -97,6 +105,12 @@ Pull requests welcome!
 ---
 
 ## 📜 Changelog
+
+### 3.2.0
+- Optional embed field: shipping method (chosen freight) with tax-inclusive price per shipping line
+- **Embed field order** – drag-and-drop in settings to arrange Discord embed fields (filter: `wc_sale_discord_field_order`)
+- Stable `internal_id` on each field so embed trimming works with translated field titles
+- Optional embed field **New or returning customer** (prior orders with `completed` / `processing` / `on-hold`, excluding current order). Filters: `wc_sale_discord_returning_customer_order_statuses`, `wc_sale_discord_customer_type_label`
 
 ### 3.1.2
 - Subscription-aware embed titles when WooCommerce Subscriptions is active (New subscription, Subscription Renewal)

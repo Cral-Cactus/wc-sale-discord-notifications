@@ -3,7 +3,7 @@ Contributors: cralcactus, Dextiz (ComFoo)
 Tags: discord, woocommerce, notifications, sales, orders
 Requires at least: 6.2
 Tested up to: 6.9.4
-Stable tag: 3.1.2
+Stable tag: 3.2.0
 Requires PHP: 8.0
 WC requires at least: 8.5
 WC tested up to: 10.6.1
@@ -25,6 +25,8 @@ This plugin sends a Discord notification for WooCommerce order events. It uses n
   * Product Options (add-ons / custom fields)
   * Order Date
   * Billing Info
+  * New or returning customer
+  * Shipping method (freight)
   * Transaction ID
   * Order Notes (customer and/or internal)
 
@@ -37,6 +39,9 @@ This plugin sends a Discord notification for WooCommerce order events. It uses n
 * Built using native WordPress/WooCommerce APIs
 * Compatible with WooCommerce Custom Order Tables (HPOS)
 * Subscription-aware titles when WooCommerce Subscriptions is active (New subscription, Subscription Renewal)
+* Optional shipping method field (chosen freight and price) in the embed
+* Drag-and-drop **Embed field order** – arrange Discord embed fields (including Order ID) in any order
+* Optional **New or returning customer** field (matches prior orders by customer ID or billing email)
 
 == Requirements ==
 
@@ -62,15 +67,18 @@ This plugin sends a Discord notification for WooCommerce order events. It uses n
    * Choose unique embed colors
 
 3. **Embed Fields**  
-   Select which fields should appear in the Discord embed (status, payment info, items, custom product fields, order date, billing info, transaction ID, order notes).
+   Select which fields should appear in the Discord embed (status, payment info, items, custom product fields, order date, billing info, new/returning customer, shipping method, transaction ID, order notes).
 
-4. **Customer notes only**  
+4. **Embed field order**  
+   Drag rows to set the order fields appear in Discord. Disabled Embed Fields are still skipped when sending.
+
+5. **Customer notes only**  
    When Order Notes is included, show only customer notes (exclude internal/admin notes).
 
-5. **Disable Product Image**  
+6. **Disable Product Image**  
    Toggle this to prevent the product image from appearing in the embed.
 
-6. **Send notification for Initiating payments**  
+7. **Send notification for Initiating payments**  
    When enabled, sends "Initiating payment" for pending orders, then "New Order!" when payment completes (processing).
 
 == Duplicate Protection ==
@@ -81,7 +89,7 @@ To prevent duplicate Discord messages (for example, if the thank-you page is ref
 
 1. After installing and activating the plugin, go to **WooCommerce → Discord Notifications**.
 2. Paste your Discord Webhook URL and select which statuses should send notifications.
-3. Choose which fields to include, whether to show product images, and whether to limit order notes to customer notes only.
+3. Choose which fields to include, drag to set embed field order, whether to show product images, and whether to limit order notes to customer notes only.
 4. Save your settings.
 
 == Screenshots ==
@@ -90,6 +98,12 @@ To prevent duplicate Discord messages (for example, if the thank-you page is ref
 2. Image of a completed order Discord webhook
 
 == Changelog ==
+
+= 3.2.0 =
+* Optional embed field: shipping method (chosen freight) with tax-inclusive price per shipping line
+* **Embed field order** – drag-and-drop list in settings to arrange Discord embed fields (filter: `wc_sale_discord_field_order`)
+* Each embed field carries a stable `internal_id` for size trimming with translated titles
+* Optional embed field **New or returning customer** (based on prior orders with completed/processing/on-hold status, excluding the current order). Filters: `wc_sale_discord_returning_customer_order_statuses`, `wc_sale_discord_customer_type_label`
 
 = 3.1.2 =
 * Subscription-aware embed titles when WooCommerce Subscriptions is active (New subscription, Subscription Renewal)
@@ -141,6 +155,9 @@ To prevent duplicate Discord messages (for example, if the thank-you page is ref
 * Initial features and webhook sending.
 
 == Upgrade Notice ==
+
+= 3.2.0 =
+Shipping method field, drag-and-drop embed field order, and new/returning customer field. Requires PHP 8.0+.
 
 = 3.1.2 =
 Subscription-aware titles, correct currency display in Discord, and embed title filter. Requires PHP 8.0+.

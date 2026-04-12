@@ -3,7 +3,7 @@
  * Plugin Name: WC Sale Discord Notifications
  * Plugin URI: https://github.com/Cral-Cactus/wc-sale-discord-notifications
  * Description: Sends a notification to a Discord channel when a sale is made or order status is changed on WooCommerce.
- * Version: 3.1.2
+ * Version: 3.2.0
  * Author: Cral_Cactus
  * Author URI: https://github.com/Cral-Cactus
  * Requires Plugins: woocommerce
@@ -31,6 +31,52 @@ class Sale_Discord_Notifications_Woo {
     const PAGE_SLUG = 'wc-sale-discord-notifications';
     const DISCORD_FIELD_MAX = 1024;
     const DISCORD_EMBED_MAX = 6000;
+
+    /**
+     * Default Discord embed field order (keys must match sanitize / builder).
+     *
+     * @return array<int, string>
+     */
+    private static function default_embed_field_order(): array {
+        return array(
+            'order_id',
+            'status',
+            'payment',
+            'product',
+            'product_meta',
+            'creation_date',
+            'billing',
+            'customer_type',
+            'shipping',
+            'transaction_id',
+            'order_notes',
+        );
+    }
+
+    /**
+     * Sanitize saved field order; append any missing keys in default order.
+     *
+     * @param array<int, mixed> $value Raw POST values.
+     * @return array<int, string>
+     */
+    public static function sanitize_embed_field_order_value(array $value): array {
+        $default = self::default_embed_field_order();
+        $seen = array();
+        $out = array();
+        foreach ($value as $raw) {
+            $k = sanitize_text_field((string) $raw);
+            if (in_array($k, $default, true) && !in_array($k, $seen, true)) {
+                $out[] = $k;
+                $seen[] = $k;
+            }
+        }
+        foreach ($default as $k) {
+            if (!in_array($k, $seen, true)) {
+                $out[] = $k;
+            }
+        }
+        return $out;
+    }
 
     public function __construct() {
         add_action('admin_menu', array($this, 'add_settings_page'));
@@ -100,9 +146,14 @@ class Sale_Discord_Notifications_Woo {
         ]);
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_info_fields', [
             'sanitize_callback' => function ($value) {
-                $allowed = array('status', 'payment', 'product', 'product_meta', 'creation_date', 'billing', 'transaction_id', 'order_notes');
+                $allowed = array('status', 'payment', 'product', 'product_meta', 'creation_date', 'billing', 'customer_type', 'shipping', 'transaction_id', 'order_notes');
                 $value = is_array($value) ? $value : array();
                 return array_values(array_intersect($value, $allowed));
+            },
+        ]);
+        register_setting(self::OPTION_GROUP, 'wc_sale_discord_field_order', [
+            'sanitize_callback' => static function ($value) {
+                return self::sanitize_embed_field_order_value(is_array($value) ? $value : array());
             },
         ]);
         register_setting(self::OPTION_GROUP, 'wc_sale_discord_force_blocking', [
@@ -178,6 +229,14 @@ class Sale_Discord_Notifications_Woo {
         );
 
         add_settings_field(
+            'wc_sale_discord_field_order',
+            __('Embed field order', 'wc-sale-discord-notifications'),
+            array($this, 'field_order_callback'),
+            self::OPTION_GROUP,
+            self::OPTION_GROUP . '_section'
+        );
+
+        add_settings_field(
             'wc_sale_discord_order_notes_customer_only',
             __('Customer notes only', 'wc-sale-discord-notifications'),
             function () {
@@ -215,6 +274,8 @@ class Sale_Discord_Notifications_Woo {
             'product_meta'  => __('Product Meta', 'wc-sale-discord-notifications'),
             'creation_date' => __('Creation Date', 'wc-sale-discord-notifications'),
             'billing'       => __('Billing Information', 'wc-sale-discord-notifications'),
+            'customer_type' => __('New or returning customer', 'wc-sale-discord-notifications'),
+            'shipping'      => __('Shipping method', 'wc-sale-discord-notifications'),
             'transaction_id' => __('Transaction ID', 'wc-sale-discord-notifications'),
             'order_notes'   => __('Order Notes', 'wc-sale-discord-notifications'),
         );
@@ -225,6 +286,46 @@ class Sale_Discord_Notifications_Woo {
             echo '<label><input type="checkbox" name="wc_sale_discord_info_fields[]" value="' . esc_attr($key) . '" ' . esc_attr($checked) . '> ' . esc_html($label) . '</label>';
             echo '</p>';
         }
+    }
+
+    /**
+     * Labels for embed field order UI (includes Order ID).
+     *
+     * @return array<string, string>
+     */
+    private function get_embed_field_labels(): array {
+        return array(
+            'order_id'       => __('Order ID', 'wc-sale-discord-notifications'),
+            'status'         => __('Status', 'wc-sale-discord-notifications'),
+            'payment'        => __('Payment', 'wc-sale-discord-notifications'),
+            'product'        => __('Product', 'wc-sale-discord-notifications'),
+            'product_meta'   => __('Product Meta', 'wc-sale-discord-notifications'),
+            'creation_date'  => __('Creation Date', 'wc-sale-discord-notifications'),
+            'billing'        => __('Billing Information', 'wc-sale-discord-notifications'),
+            'customer_type'  => __('New or returning customer', 'wc-sale-discord-notifications'),
+            'shipping'       => __('Shipping method', 'wc-sale-discord-notifications'),
+            'transaction_id' => __('Transaction ID', 'wc-sale-discord-notifications'),
+            'order_notes'    => __('Order Notes', 'wc-sale-discord-notifications'),
+        );
+    }
+
+    public function field_order_callback() {
+        $saved = get_option('wc_sale_discord_field_order', array());
+        $order = (!is_array($saved) || empty($saved)) ? self::default_embed_field_order() : self::sanitize_embed_field_order_value($saved);
+        $labels = $this->get_embed_field_labels();
+        echo '<p class="description">' . esc_html__('Drag rows to set the order of fields in the Discord embed. Fields turned off under Embed Fields above are still omitted when sending.', 'wc-sale-discord-notifications') . '</p>';
+        echo '<ul id="wc-sale-discord-field-order" class="wc-sale-discord-sortable" style="list-style:none;margin:0;padding:0;max-width:28rem;">';
+        foreach ($order as $key) {
+            if (!isset($labels[$key])) {
+                continue;
+            }
+            echo '<li style="margin:4px 0;padding:0;border:1px solid #c3c4c7;background:#fff;border-radius:4px;">';
+            echo '<span class="wc-sale-discord-field-order-handle" style="display:block;padding:8px 12px;cursor:grab;">';
+            echo '<input type="hidden" name="wc_sale_discord_field_order[]" value="' . esc_attr($key) . '" />';
+            echo esc_html($labels[$key]);
+            echo '</span></li>';
+        }
+        echo '</ul>';
     }
 
     public function discord_webhook_url_callback() {
@@ -292,6 +393,20 @@ class Sale_Discord_Notifications_Woo {
             array('wp-color-picker'),
             '1.0.0',
             true
+        );
+        wp_enqueue_script('jquery-ui-sortable');
+        wp_enqueue_script(
+            'wc-sale-discord-field-order',
+            plugins_url('field-order.js', __FILE__),
+            array('jquery', 'jquery-ui-sortable'),
+            '1.0.0',
+            true
+        );
+        wp_register_style('wc-sale-discord-admin', false);
+        wp_enqueue_style('wc-sale-discord-admin');
+        wp_add_inline_style(
+            'wc-sale-discord-admin',
+            '#wc-sale-discord-field-order .ui-sortable-placeholder{visibility:visible!important;min-height:2.5rem;background:#f0f6fc;border:1px dashed #2271b1;border-radius:4px;}'
         );
     }
 
@@ -514,57 +629,157 @@ class Sale_Discord_Notifications_Woo {
 
         $embed_title = $this->get_embed_title($order, $type);
 
-        $embed_fields = [
-            ['name' => 'Order ID', 'value' => "[#{$order_id}]({$order_edit_url})", 'inline' => false],
-        ];
-
-        if ($field_included('status')) {
-            $embed_fields[] = ['name' => 'Status', 'value' => $order_status, 'inline' => false];
-        }
-        if ($field_included('payment')) {
-            $embed_fields[] = ['name' => 'Payment', 'value' => "{$order_total} - {$payment_method}", 'inline' => false];
-        }
-        if ($field_included('product')) {
-            $embed_fields[] = ['name' => 'Product', 'value' => $items_list ?: '-', 'inline' => false];
-        }
+        $product_meta_list = '';
         if ($field_included('product_meta')) {
             $product_meta_list = $this->get_product_meta_for_embed($order_items);
-            if (!empty($product_meta_list)) {
-                $embed_fields[] = ['name' => 'Product Meta', 'value' => $this->truncate_discord_field($product_meta_list), 'inline' => false];
-            }
         }
-        if ($field_included('creation_date')) {
-            $embed_fields[] = ['name' => 'Creation Date', 'value' => "<t:{$order_timestamp}:d> (<t:{$order_timestamp}:R>)", 'inline' => false];
+        $shipping_value = $this->get_shipping_for_embed($order, $order_currency);
+        $customer_type_label = '';
+        if ($field_included('customer_type')) {
+            $customer_type_label = $this->get_customer_type_label_for_embed($order);
         }
-        if ($field_included('billing')) {
-            $billing_value = "**Name** » {$billing_first_name} {$billing_last_name}\n**Email** » {$billing_email}";
-            if (!empty($billing_discord)) {
-                $billing_value .= "\n**Discord** » {$billing_discord}";
-            }
-            $embed_fields[] = ['name' => 'Billing Information', 'value' => $this->truncate_discord_field($billing_value), 'inline' => true];
+        $customer_only_notes = (bool) get_option('wc_sale_discord_order_notes_customer_only', false);
+        $order_notes_text = '';
+        if ($field_included('order_notes')) {
+            $order_notes_text = $this->get_order_notes_for_embed($order_id, $order, $customer_only_notes);
         }
 
-        $embed = [
+        $embed_fields = array();
+        foreach ($this->get_embed_field_order_for_send() as $field_key) {
+            switch ($field_key) {
+                case 'order_id':
+                    $embed_fields[] = array(
+                        'internal_id' => 'order_id',
+                        'name'        => __('Order ID', 'wc-sale-discord-notifications'),
+                        'value'       => "[#{$order_id}]({$order_edit_url})",
+                        'inline'      => false,
+                    );
+                    break;
+                case 'status':
+                    if (!$field_included('status')) {
+                        break;
+                    }
+                    $embed_fields[] = array(
+                        'internal_id' => 'status',
+                        'name'        => __('Status', 'wc-sale-discord-notifications'),
+                        'value'       => $order_status,
+                        'inline'      => false,
+                    );
+                    break;
+                case 'payment':
+                    if (!$field_included('payment')) {
+                        break;
+                    }
+                    $embed_fields[] = array(
+                        'internal_id' => 'payment',
+                        'name'        => __('Payment', 'wc-sale-discord-notifications'),
+                        'value'       => "{$order_total} - {$payment_method}",
+                        'inline'      => false,
+                    );
+                    break;
+                case 'product':
+                    if (!$field_included('product')) {
+                        break;
+                    }
+                    $embed_fields[] = array(
+                        'internal_id' => 'product',
+                        'name'        => __('Product', 'wc-sale-discord-notifications'),
+                        'value'       => $items_list ?: '-',
+                        'inline'      => false,
+                    );
+                    break;
+                case 'product_meta':
+                    if (!$field_included('product_meta') || $product_meta_list === '') {
+                        break;
+                    }
+                    $embed_fields[] = array(
+                        'internal_id' => 'product_meta',
+                        'name'        => __('Product Meta', 'wc-sale-discord-notifications'),
+                        'value'       => $this->truncate_discord_field($product_meta_list),
+                        'inline'      => false,
+                    );
+                    break;
+                case 'creation_date':
+                    if (!$field_included('creation_date')) {
+                        break;
+                    }
+                    $embed_fields[] = array(
+                        'internal_id' => 'creation_date',
+                        'name'        => __('Creation Date', 'wc-sale-discord-notifications'),
+                        'value'       => "<t:{$order_timestamp}:d> (<t:{$order_timestamp}:R>)",
+                        'inline'      => false,
+                    );
+                    break;
+                case 'billing':
+                    if (!$field_included('billing')) {
+                        break;
+                    }
+                    $billing_value = "**Name** » {$billing_first_name} {$billing_last_name}\n**Email** » {$billing_email}";
+                    if (!empty($billing_discord)) {
+                        $billing_value .= "\n**Discord** » {$billing_discord}";
+                    }
+                    $embed_fields[] = array(
+                        'internal_id' => 'billing',
+                        'name'        => __('Billing Information', 'wc-sale-discord-notifications'),
+                        'value'       => $this->truncate_discord_field($billing_value),
+                        'inline'      => true,
+                    );
+                    break;
+                case 'customer_type':
+                    if (!$field_included('customer_type')) {
+                        break;
+                    }
+                    $embed_fields[] = array(
+                        'internal_id' => 'customer_type',
+                        'name'        => __('New or returning customer', 'wc-sale-discord-notifications'),
+                        'value'       => $customer_type_label,
+                        'inline'      => true,
+                    );
+                    break;
+                case 'shipping':
+                    if (!$field_included('shipping')) {
+                        break;
+                    }
+                    $embed_fields[] = array(
+                        'internal_id' => 'shipping',
+                        'name'        => __('Shipping', 'wc-sale-discord-notifications'),
+                        'value'       => $this->truncate_discord_field($shipping_value !== '' ? $shipping_value : '-'),
+                        'inline'      => false,
+                    );
+                    break;
+                case 'transaction_id':
+                    if (!$field_included('transaction_id') || empty($transaction_id)) {
+                        break;
+                    }
+                    $embed_fields[] = array(
+                        'internal_id' => 'transaction_id',
+                        'name'        => __('Transaction ID', 'wc-sale-discord-notifications'),
+                        'value'       => $this->truncate_discord_field($transaction_id),
+                        'inline'      => false,
+                    );
+                    break;
+                case 'order_notes':
+                    if (!$field_included('order_notes') || $order_notes_text === '') {
+                        break;
+                    }
+                    $embed_fields[] = array(
+                        'internal_id' => 'order_notes',
+                        'name'        => __('Order Notes', 'wc-sale-discord-notifications'),
+                        'value'       => $this->truncate_discord_field($order_notes_text),
+                        'inline'      => false,
+                    );
+                    break;
+            }
+        }
+
+        $embed = array(
             'title'  => $embed_title,
             'fields' => $embed_fields,
-            'color'  => $embed_color
-        ];
-
-        if ($field_included('transaction_id') && !empty($transaction_id)) {
-            $embed['fields'][] = ['name' => 'Transaction ID', 'value' => $this->truncate_discord_field($transaction_id), 'inline' => false];
-        }
+            'color'  => $embed_color,
+        );
 
         if ($first_product_image && !get_option('wc_sale_discord_disable_image')) {
-            $embed['image'] = ['url' => $first_product_image];
-        }
-
-        $include_order_notes = $field_included('order_notes');
-        if ($include_order_notes) {
-            $customer_only = (bool) get_option('wc_sale_discord_order_notes_customer_only', false);
-            $order_notes = $this->get_order_notes_for_embed($order_id, $order, $customer_only);
-            if (!empty($order_notes)) {
-                $embed['fields'][] = ['name' => 'Order Notes', 'value' => $this->truncate_discord_field($order_notes), 'inline' => false];
-            }
+            $embed['image'] = array('url' => $first_product_image);
         }
 
         $embed = $this->trim_embed_to_limit($embed);
@@ -575,6 +790,21 @@ class Sale_Discord_Notifications_Woo {
             $order->update_meta_data('_discord_sent_' . $order_status_key . '_' . $type, current_time('mysql'));
             $order->save();
         }
+    }
+
+    /**
+     * Resolved embed field order for outgoing notifications (saved option or default, filterable).
+     *
+     * @return array<int, string>
+     */
+    private function get_embed_field_order_for_send(): array {
+        $saved = get_option('wc_sale_discord_field_order', array());
+        if (!is_array($saved) || empty($saved)) {
+            $order = self::default_embed_field_order();
+        } else {
+            $order = self::sanitize_embed_field_order_value($saved);
+        }
+        return apply_filters('wc_sale_discord_field_order', $order);
     }
 
     /**
@@ -599,6 +829,95 @@ class Sale_Discord_Notifications_Woo {
             $title = ($type === 'new') ? '🎉 New Order!' : '🪄 Order Update!';
         }
         return apply_filters('wc_sale_discord_embed_title', $title, $order, $type);
+    }
+
+    /**
+     * Get chosen shipping method(s) and cost for Discord embed.
+     *
+     * @param WC_Order $order          Order object.
+     * @param string   $order_currency Order currency code.
+     * @return string One line per shipping package, or empty if none.
+     */
+    private function get_shipping_for_embed($order, string $order_currency): string {
+        $lines = array();
+        foreach ($order->get_items('shipping') as $item) {
+            if (!is_object($item) || !method_exists($item, 'get_name')) {
+                continue;
+            }
+            $name = wp_strip_all_tags($item->get_name());
+            if ($name === '' && method_exists($item, 'get_method_title')) {
+                $name = wp_strip_all_tags((string) $item->get_method_title());
+            }
+            $total = (float) $item->get_total() + (float) $item->get_total_tax();
+            $price = html_entity_decode(
+                strip_tags(wc_price($total, array('currency' => $order_currency))),
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            );
+            $line = $name;
+            if ($price !== '') {
+                $line .= ($line !== '' ? ' - ' : '') . $price;
+            }
+            if ($line !== '') {
+                $lines[] = $line;
+            }
+        }
+        if (!empty($lines)) {
+            return implode("\n", array_filter($lines));
+        }
+        $method = $order->get_shipping_method();
+        if ($method !== '') {
+            $total = (float) $order->get_shipping_total() + (float) $order->get_shipping_tax();
+            $price = html_entity_decode(
+                strip_tags(wc_price($total, array('currency' => $order_currency))),
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            );
+            return trim(wp_strip_all_tags($method) . ($price !== '' ? " - {$price}" : ''));
+        }
+        return '';
+    }
+
+    /**
+     * Whether the purchaser has prior qualifying orders (excluding this order).
+     *
+     * @param WC_Order $order Current order.
+     * @return string Localized "New customer", "Returning customer", or "Unknown".
+     */
+    private function get_customer_type_label_for_embed($order): string {
+        if (!function_exists('wc_get_orders')) {
+            return __('Unknown', 'wc-sale-discord-notifications');
+        }
+        $current_id = $order->get_id();
+        $customer_id = (int) $order->get_customer_id();
+        $email = (string) $order->get_billing_email();
+        if ($customer_id < 1 && $email === '') {
+            return __('Unknown', 'wc-sale-discord-notifications');
+        }
+        $statuses = apply_filters(
+            'wc_sale_discord_returning_customer_order_statuses',
+            array('completed', 'processing', 'on-hold')
+        );
+        $args = array(
+            'limit'   => 1,
+            'return'  => 'ids',
+            'status'  => $statuses,
+            'exclude' => array($current_id),
+        );
+        if ($customer_id > 0) {
+            $args['customer_id'] = $customer_id;
+        } else {
+            $args['billing_email'] = $email;
+        }
+        $prior = wc_get_orders($args);
+        if (is_wp_error($prior)) {
+            return __('Unknown', 'wc-sale-discord-notifications');
+        }
+        $is_returning = !empty($prior);
+        $label = $is_returning
+            ? __('Returning customer', 'wc-sale-discord-notifications')
+            : __('New customer', 'wc-sale-discord-notifications');
+        return apply_filters('wc_sale_discord_customer_type_label', $label, $order, $is_returning);
     }
 
     /**
@@ -674,7 +993,7 @@ class Sale_Discord_Notifications_Woo {
             return $embed;
         }
 
-        $trimmable_names = ['Order Notes', 'Product Meta', 'Product', 'Billing Information', 'Transaction ID'];
+        $trimmable_ids = array('order_notes', 'product_meta', 'product', 'billing', 'shipping', 'transaction_id');
         $embed_copy = $embed;
         $attempt = 0;
         $max_attempts = 50;
@@ -685,7 +1004,8 @@ class Sale_Discord_Notifications_Woo {
 
             foreach ($embed_copy['fields'] as $idx => $field) {
                 $val = $field['value'] ?? '';
-                if (strlen($val) > $longest_len && in_array($field['name'] ?? '', $trimmable_names, true)) {
+                $fid = isset($field['internal_id']) ? (string) $field['internal_id'] : '';
+                if (strlen($val) > $longest_len && in_array($fid, $trimmable_ids, true)) {
                     $longest_idx = $idx;
                     $longest_len = strlen($val);
                 }
@@ -767,6 +1087,13 @@ class Sale_Discord_Notifications_Woo {
      * @param array  $embed       Embed array (title, fields, color, image).
      */
     private function send_to_discord($webhook_url, $embed) {
+        if (!empty($embed['fields']) && is_array($embed['fields'])) {
+            foreach ($embed['fields'] as $idx => $field) {
+                if (is_array($field) && array_key_exists('internal_id', $field)) {
+                    unset($embed['fields'][$idx]['internal_id']);
+                }
+            }
+        }
         $data = wp_json_encode(['embeds' => [$embed]]);
 
         $args = [
